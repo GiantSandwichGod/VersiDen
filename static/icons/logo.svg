@@ -1,0 +1,6 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="VersiDen">
+  <path d="M14 58V30a18 18 0 0 1 36 0v28" fill="none" stroke="#b48cf0" stroke-width="5" stroke-linecap="round"/>
+  <path d="M38 30a11 11 0 1 1-10-11 8.5 8.5 0 0 0 10 11z" fill="#f1c6d8"/>
+  <circle cx="40" cy="44" r="1.8" fill="#f1c6d8"/><circle cx="25" cy="48" r="1.4" fill="#d8c3fa"/><circle cx="34" cy="52" r="1.1" fill="#d8c3fa"/>
+  <path d="M8 58h48" stroke="#b48cf0" stroke-width="5" stroke-linecap="round"/>
+</svg>

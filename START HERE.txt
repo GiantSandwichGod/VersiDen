@@ -1,0 +1,15 @@
+VersiDen: a local roleplay companion
+====================================
+
+Open "VersiDen-Setup-Guide.pdf" in this folder and follow it step by step.
+It takes about 30 minutes, mostly waiting for downloads.
+
+The short version:
+  1. Install Python from python.org (tick "Add python.exe to PATH").
+  2. Install LM Studio from lmstudio.ai and download a model.
+     In LM Studio: Settings (Ctrl + ,) > Developer > turn on "Enable Local LLM Service".
+  3. Open this folder, click the address bar, type cmd, press Enter, then run:
+        pip install -r requirements.txt
+  4. Double-click start.bat. Your browser opens VersiDen.
+
+Once it's running, the same guide is inside the app: click "? Guide".

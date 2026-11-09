@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Model Settings · VersiDen</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<link rel="icon" href="/static/icons/icon-192.png">
+<meta name="theme-color" content="#121015">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="/static/theme.css">
+<script src="/static/theme.js"></script>
+<style>
+  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --text:#f0e9f3; --muted:#ada2b6; --dim:#7b7085;
+          --accent:#b48cf0; --line:#352b3c; --bad:#ec7b8f; --good:#93c9a1; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.55 'Inter', system-ui, sans-serif; }
+  .top { display:flex; align-items:center; justify-content:space-between; padding:14px 24px; border-bottom:1px solid var(--line);
+         position:sticky; top:0; z-index:10; background:var(--bg); }
+  .top b { font-weight:600; } .top a { color:var(--muted); text-decoration:none; font-size:14px; }
+  main { max-width:680px; margin:0 auto; padding:24px 20px 0; }
+  h1 { font-size:22px; font-weight:600; margin:4px 0 4px; }
+  .lead { color:var(--muted); margin:0 0 22px; }
+  .section-title { text-align:center; color:var(--muted); font-size:14px; margin:26px 0 12px; }
+  .card { background:var(--card); border-radius:22px; padding:14px 16px 16px; margin-bottom:14px; }
+  .card-head { display:flex; align-items:center; gap:8px; margin:0 4px 10px; font-size:14px; }
+  .card-head .info { width:16px; height:16px; border:1.4px solid var(--muted); border-radius:50%; display:inline-flex; align-items:center;
+                     justify-content:center; font-size:10px; font-weight:700; color:var(--muted); cursor:help; flex-shrink:0; }
+  .card-head .grow { flex:1; }
+  .card-head .val { color:var(--text); font-variant-numeric:tabular-nums; background:var(--field); border-radius:8px; padding:1px 8px; font-size:13px; }
+  .hint { color:var(--dim); font-size:13px; margin:8px 6px 0; }
+  select, input[type=number] { width:100%; background:var(--field); color:var(--text); border:0; border-radius:16px; padding:13px 16px; font:inherit; outline:none; }
+  .row { display:flex; gap:8px; }
+  .row select { flex:1; }
+  input[type=range] { width:100%; accent-color:var(--accent); margin:6px 0 0; }
+  .scale { display:flex; justify-content:space-between; color:var(--dim); font-size:12px; margin:0 2px; }
+  .btn { background:var(--field); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px 16px; font:inherit; cursor:pointer; white-space:nowrap; }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  .actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; position:sticky; bottom:0; z-index:10; background:var(--bg);
+             border-top:1px solid var(--line); margin:22px -20px 0; padding:12px 20px max(12px, env(safe-area-inset-bottom)); }
+  .actions .status { min-width:120px; }
+  .actions .status:empty { min-width:0; }
+  @media (max-width: 560px) {
+    .actions { gap:6px; flex-wrap:wrap; }
+    .actions .status { order:-1; flex-basis:100%; min-width:0; }
+    .actions .status:empty { display:none; }
+    .actions .btn { padding:8px 11px; font-size:14px; }
+    .actions .goback { margin-right:auto; }
+  }
+  .status { flex:1; color:var(--muted); font-size:14px; }
+  .ok { color:var(--good); } .bad { color:var(--bad); }
+  .def { color:var(--dim); font-size:13px; cursor:pointer; margin-right:6px; }
+  .def:hover { color:var(--muted); }
+  #reasoningCard.unsupported input[type=range], #reasoningCard.unsupported .scale, #reasoningCard.unsupported #reasoningAbout { opacity:.35; }
+  #reasoningCard.unsupported .def { pointer-events:none; opacity:.35; }
+  .test { background:var(--field); border-radius:16px; padding:12px 16px; margin-top:10px; font-size:14px; display:none; white-space:pre-wrap; }
+  @media (pointer: coarse) { input, textarea, select { font-size:16px !important; } }
+</style>
+</head>
+<body>
+<div class="top"><b>Model Settings</b><span><a href="/guide" style="margin-right:18px">? Guide</a><a href="#" class="goback">← Back</a></span></div>
+<main>
+  <h1>Model & Generation</h1>
+  <p class="lead">These apply to every world and character. Changes take effect on the next message.</p>
+
+  <div class="section-title">Which model</div>
+  <div class="card">
+    <div class="card-head"><span class="info" title="Every model you have downloaded in LM Studio. Picking one that isn't loaded makes LM Studio load it on the next message, which can take a little while the first time.">i</span><span class="grow">Model</span></div>
+    <div class="row">
+      <select id="model"></select>
+      <button class="btn" id="refresh" title="Reload the list from LM Studio">↻</button>
+    </div>
+    <p class="hint" id="modelHint"></p>
+    <p class="hint"><a href="/guide#models" style="color:var(--muted)">Which model should I use? See the guide →</a></p>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="info" title="How the conversation is handed to the model. Auto uses the Qwen-style format (with thinking switched off) for Qwen models, and the model's own template for everything else.">i</span><span class="grow">Prompt format</span></div>
+    <select id="prompt_format">
+      <option value="auto">Auto (recommended)</option>
+      <option value="qwen">Qwen-style, thinking switched off</option>
+      <option value="chat">Model's own template (LM Studio decides)</option>
+    </select>
+  </div>
+
+  <div class="section-title">How it writes</div>
+  <div class="card">
+    <div class="card-head"><span class="info" title="A style nudge read right before every character and NPC reply. This is the default for stories; each story can switch it from the pill in the message box.">i</span><span class="grow">Default flair</span></div>
+    <select id="flair"></select>
+    <p class="hint" id="flairAbout"></p>
+    <p class="hint">New stories start with this. Switch it per story from the pill in the message box.</p>
+  </div>
+  <div class="card" id="reasoningCard">
+    <div class="card-head"><span class="info" title="Lets the model think before it replies. The thinking is hidden from you. Slower, but replies tend to be more consistent and attentive. Only works with the Qwen-style prompt format. If the thinking runs too long, the app answers without it instead of giving you an empty reply.">i</span><span class="grow">Reasoning effort · <span id="reasoningVal"></span></span><a class="def" data-for="reasoning">Set to default</a></div>
+    <input type="range" id="reasoning" min="0" max="2" step="1">
+    <div class="scale"><span>Off</span><span>Light</span><span>Deep</span></div>
+    <p class="hint" id="reasoningAbout"></p>
+    <p class="hint" id="reasoningOff" hidden></p>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="info" title="Temperature. Lower = predictable and consistent, higher = surprising and colourful but more likely to drift or contradict itself.">i</span><span class="grow">Creativity</span><a class="def" data-for="temperature">Set to default</a><span class="val" id="temperatureVal"></span></div>
+    <input type="range" id="temperature" min="0" max="1.5" step="0.05">
+    <div class="scale"><span>Focused</span><span>Balanced</span><span>Wild</span></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="info" title="Penalises reusing the same words. Raise it if a character keeps repeating phrases; too high makes the writing odd.">i</span><span class="grow">Repetition penalty</span><a class="def" data-for="repeat_penalty">Set to default</a><span class="val" id="repeat_penaltyVal"></span></div>
+    <input type="range" id="repeat_penalty" min="1" max="1.5" step="0.01">
+    <div class="scale"><span>Off</span><span>Strong</span></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="info" title="The most the model may write per reply, in tokens (about ¾ of a word each). This is a safety cap, not a target: for shorter replies, ask for them in the world's Writing format.">i</span><span class="grow">Reply length cap</span><a class="def" data-for="max_tokens">Set to default</a><span class="val" id="max_tokensVal"></span></div>
+    <input type="range" id="max_tokens" min="200" max="4000" step="100">
+    <div class="scale"><span>Short</span><span>Long</span></div>
+  </div>
+
+  <div class="section-title">Content</div>
+  <div class="card">
+    <div class="card-head"><span class="info" title="Off: romance and tension are fine, but sexual scenes fade to black. On: mature content between consenting adults is allowed when the story leads there. Characters can opt out on their own page (Never mature content). Whether the model actually writes it depends on the model: many official models refuse whatever this says.">i</span><span class="grow">Mature content</span></div>
+    <label style="display:flex;gap:10px;align-items:center;padding:2px 6px;cursor:pointer">
+      <input type="checkbox" id="mature" style="width:18px;height:18px;accent-color:var(--accent)"> Allow mature content between adults
+    </label>
+    <p class="hint">Off by default. Some models won't write it either way; others need this on to stop holding back. Characters marked "Never mature content" always stay non-explicit.</p>
+  </div>
+
+  <div class="section-title">Memory</div>
+  <div class="card">
+    <div class="card-head"><span class="info" title="How many tokens of world, story and chat the app sends with each message. Automatic uses about 3/4 of the Context Length the model is loaded with in LM Studio, so it adjusts when you switch models. When the chat goes over, older messages are summarised into the memory journal.">i</span><span class="grow">Memory size (tokens)</span></div>
+    <label style="display:flex;gap:10px;align-items:center;padding:2px 6px 8px;cursor:pointer">
+      <input type="checkbox" id="context_auto" style="width:18px;height:18px;accent-color:var(--accent)"> Automatic, based on the loaded model (recommended)
+    </label>
+    <input type="number" id="context_budget" min="2000" max="200000" step="1000">
+    <p class="hint" id="memoryNow"></p>
+  </div>
+
+  <h1 style="margin-top:44px">Access</h1>
+  <p class="lead">Where to open the app, and whether your phone can use it too.</p>
+  <div class="card">
+    <div class="card-head"><span class="info" title="Any name ending in .localhost works in Chrome, Edge and Firefox on this PC. Change it in config.toml (pc_address).">i</span><span class="grow">On this PC</span></div>
+    <p class="hint" style="margin-top:0">Open <a id="pcUrl" style="color:var(--text)" href="#"></a> and bookmark it.</p>
+  </div>
+  <div class="card" id="accessCard">
+    <div class="card-head"><span class="info" title="Lets your phone, tablet or another computer on the same Wi-Fi use the app while this PC is on and the app is running. They'll ask for the passphrase once. The PC itself never asks.">i</span><span class="grow">Phone & Other Devices</span></div>
+    <label style="display:flex;gap:10px;align-items:center;margin:2px 6px 12px;cursor:pointer">
+      <input type="checkbox" id="allowNet" style="width:18px;height:18px;accent-color:var(--accent)"> Allow devices on my home network
+    </label>
+    <input type="password" id="passphrase" autocomplete="new-password" placeholder="Passphrase (at least 6 characters)"
+      style="width:100%;background:var(--field);color:var(--text);border:0;border-radius:16px;padding:13px 16px;font:inherit;outline:none">
+    <p class="hint" id="passHint"></p>
+    <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
+      <button class="btn primary" id="saveAccess">Save access</button>
+      <span class="status" id="accessStatus"></span>
+    </div>
+    <div id="phoneBox" class="test" style="display:none;margin-top:14px"></div>
+  </div>
+
+  <div class="test" id="testOut"></div>
+  <div class="actions">
+    <button class="btn goback" type="button">← Back</button>
+    <span class="status" id="status"></span>
+    <button class="btn" id="test">Test model</button>
+    <button class="btn" id="reset">Defaults</button>
+    <button class="btn primary" id="save">Save</button>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const fields = ['temperature', 'repeat_penalty', 'max_tokens'];
+const REASONING = ['off', 'light', 'deep'];
+const REASONING_TEXT = {
+  off: ['Off', 'Fastest. Replies start straight away.'],
+  light: ['Light', 'Thinks briefly before each reply. A bit slower, more attentive.'],
+  deep: ['Deep', 'Deliberate, slower reasoning for more depth and fewer mistakes. Can take much longer per reply.'],
+};
+let defaults = {}, flairs = [], models = [], memoryNow = null;
+
+// Memory size: automatic (from the loaded model's Context Length) or a fixed number
+function showMemory() {
+  const auto = $('context_auto').checked, m = memoryNow;
+  $('context_budget').disabled = auto; $('context_budget').style.opacity = auto ? .45 : 1;
+  if (auto) {
+    $('context_budget').value = m ? m.auto : $('context_budget').value;
+    $('memoryNow').textContent = m && m.ctx
+      ? `Now about ${m.auto.toLocaleString()} tokens: ${m.model || 'the model'} is loaded with a Context Length of ${m.ctx.toLocaleString()}.`
+      : `About ${(m ? m.auto : 6000).toLocaleString()} tokens until a model has loaded; then about 3/4 of its Context Length.`;
+  } else {
+    $('memoryNow').textContent = 'Keep it about 3/4 of the model\'s Context Length in LM Studio (16384 → 12000, 32768 → 24000). ' +
+      'If the model is loaded with less, the app uses less automatically.';
+  }
+}
+$('context_auto') && $('context_auto').addEventListener('change', showMemory);
+
+// Reasoning only works with the Qwen-style prompt format, so grey the slider out for other models.
+// (The saved value is kept, so switching back to a Qwen model brings it back.)
+function effectiveModel() {
+  const picked = $('model').value;
+  if (picked) return picked;
+  const loaded = models.find(m => m.loaded);
+  return loaded ? loaded.id : '';
+}
+function checkReasoning() {
+  const fmt = $('prompt_format').value, model = effectiveModel();
+  let why = '';
+  if (fmt === 'chat') why = 'Not used with Prompt format: Model\'s own template. Reasoning control needs the Qwen-style format.';
+  else if (fmt === 'auto' && model && !model.toLowerCase().includes('qwen'))
+    why = `Not available for ${model}. Reasoning control currently only works with Qwen models. Your setting is kept for when you switch back.`;
+  else if (fmt === 'auto' && !model)
+    why = 'No model is loaded yet, so this applies only if the model that loads is a Qwen model.';
+  const off = !!why && !(fmt === 'auto' && !model);
+  $('reasoningCard').classList.toggle('unsupported', off);
+  $('reasoning').disabled = off;
+  $('reasoningOff').hidden = !why; $('reasoningOff').textContent = why;
+  showVals();
+}
+function showVals() {
+  const r = REASONING[$('reasoning').value];
+  $('reasoningVal').textContent = $('reasoningCard').classList.contains('unsupported') ? 'not available' : REASONING_TEXT[r][0]; $('reasoningAbout').textContent = REASONING_TEXT[r][1];
+  const f = flairs.find(x => x.id === $('flair').value); $('flairAbout').textContent = f ? f.about : '';
+  $('temperatureVal').textContent = Number($('temperature').value).toFixed(2);
+  $('repeat_penaltyVal').textContent = Number($('repeat_penalty').value).toFixed(2);
+  $('max_tokensVal').textContent = $('max_tokens').value;
+}
+[...fields, 'reasoning'].forEach(f => $(f).addEventListener('input', () => { showVals(); $('status').textContent = 'Unsaved changes'; }));
+$('flair').addEventListener('change', showVals);
+document.querySelectorAll('.def').forEach(a => a.onclick = () => {
+  const k = a.dataset.for;
+  $(k).value = k === 'reasoning' ? REASONING.indexOf(defaults.reasoning) : defaults[k];
+  showVals(); $('status').textContent = 'Unsaved changes';
+});
+['model', 'prompt_format', 'context_budget', 'context_auto', 'flair', 'mature'].forEach(f => $(f).addEventListener('change', () => $('status').textContent = 'Unsaved changes'));
+['model', 'prompt_format'].forEach(f => $(f).addEventListener('change', checkReasoning));
+
+function fill(st) {
+  $('mature').checked = !!st.mature;
+  $('prompt_format').value = st.prompt_format;
+  $('flair').value = st.flair;
+  $('reasoning').value = Math.max(0, REASONING.indexOf(st.reasoning));
+  fields.forEach(f => $(f).value = st[f]);
+  $('context_budget').value = st.context_budget;
+  $('context_auto').checked = st.context_auto !== false;
+  showMemory();
+  showVals();
+  if ([...$('model').options].some(o => o.value === st.model)) $('model').value = st.model;
+  checkReasoning();
+}
+async function loadModels(selected) {
+  const sel = $('model'); sel.innerHTML = '';
+  sel.append(new Option('Whichever model is loaded in LM Studio', ''));
+  const r = await fetch('/api/models'); const j = await r.json();
+  models = j.models || [];
+  if (j.error) { $('modelHint').textContent = j.error; $('modelHint').className = 'hint bad'; }
+  else {
+    j.models.forEach(m => sel.append(new Option(m.id + (m.loaded ? '  (loaded)' : ''), m.id)));
+    $('modelHint').className = 'hint';
+    $('modelHint').textContent = `${j.models.length} model${j.models.length === 1 ? '' : 's'} found. ` +
+      'Switching loads the new one on the next message. With 12 GB of VRAM, unload the old one in LM Studio (or turn on Auto-Evict) so they don\'t both sit in memory.';
+  }
+  if (selected && ![...sel.options].some(o => o.value === selected)) sel.append(new Option(selected + '  (not found)', selected));
+  sel.value = selected || '';
+  checkReasoning();
+}
+(async () => {
+  const j = await (await fetch('/api/settings')).json();
+  defaults = j.defaults; flairs = j.flairs; memoryNow = j.memory_now;
+  flairs.forEach(f => $('flair').append(new Option(f.label, f.id)));
+  await loadModels(j.settings.model);
+  fill(j.settings);
+})();
+$('refresh').onclick = () => loadModels($('model').value);
+$('reset').onclick = () => { const m = $('model').value; fill({...defaults, model: m}); $('model').value = m; $('status').textContent = 'Defaults restored. Click Save to keep them.'; };
+async function save() {
+  const body = {model: $('model').value, prompt_format: $('prompt_format').value, context_budget: $('context_budget').value,
+                context_auto: $('context_auto').checked,
+                flair: $('flair').value, reasoning: REASONING[$('reasoning').value]};
+  body.mature = $('mature').checked;
+  fields.forEach(f => body[f] = $(f).value);
+  const r = await fetch('/api/settings', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  const j = await r.json();
+  $('status').className = 'status ' + (j.error ? 'bad' : 'ok');
+  $('status').textContent = j.error || 'Saved ✓';
+  if (!j.error) unsaved = false;
+  return !j.error;
+}
+$('save').onclick = save;
+
+// ---- leaving: Back (top and bottom) returns to where you came from, and asks first if something isn't saved
+let unsaved = false;
+document.querySelector('main').addEventListener('input', e => { if (e.target.matches('input, select, textarea')) unsaved = true; });
+document.querySelector('main').addEventListener('change', e => { if (e.target.matches('input, select, textarea')) unsaved = true; });
+$('reset').addEventListener('click', () => { unsaved = true; });
+function goBack(e) {
+  if (e) e.preventDefault();
+  if (unsaved && !confirm('You have unsaved changes. Leave without saving?')) return;
+  unsaved = false;
+  const ref = document.referrer && new URL(document.referrer);
+  if (ref && ref.origin === location.origin && ref.pathname !== location.pathname && history.length > 1) history.back();
+  else location.href = '/start';
+}
+document.querySelectorAll('.goback').forEach(b => b.addEventListener('click', goBack));
+window.addEventListener('beforeunload', e => { if (unsaved) { e.preventDefault(); e.returnValue = ''; } });
+
+// ---- access: this PC's address, phone access + passphrase
+async function loadAccess(saved) {
+  const a = await (await fetch('/api/access')).json();
+  $('pcUrl').textContent = a.pc_url; $('pcUrl').href = a.pc_url;
+  $('allowNet').checked = a.allow_network;
+  $('passHint').textContent = a.has_passphrase ? 'A passphrase is set. Type a new one only to change it (this logs your other devices out).'
+                                               : 'Your phone will ask for this once, then remember it.';
+  if (a.remote) {
+    $('accessCard').querySelectorAll('input, button').forEach(e => e.disabled = true);
+    $('passHint').textContent = 'You can only change this on the PC itself.';
+  }
+  const box = $('phoneBox');
+  if (a.allow_network && a.restart_needed) {
+    box.style.display = 'block';
+    box.textContent = 'Saved. Restart the app to apply this: right-click the app\'s icon near the clock → Restart.' +
+      (a.phone_urls.length ? `\n\nAfterwards, on your phone (same Wi-Fi), open:\n${a.phone_urls.join('\n')}` : '');
+  } else if (a.allow_network) {
+    box.style.display = 'block';
+    box.textContent = `On your phone (same Wi-Fi), open:\n${a.phone_urls.join('\n') || '(no network address found)'}\n\n` +
+      'Tip: in Safari, tap Share → Add to Home Screen, and it opens like an app.' +
+      (a.phone_urls.length > 1 ? '\nIf the first address doesn\'t work, try the next one.' : '');
+  } else if (!a.allow_network && a.restart_needed) {
+    box.style.display = 'block'; box.textContent = 'Saved. Restart the app (right-click its icon near the clock → Restart) to switch phone access off completely.';
+  } else box.style.display = 'none';
+  if (saved) { $('accessStatus').className = 'status ok'; $('accessStatus').textContent = 'Saved ✓'; }
+}
+$('saveAccess').onclick = async () => {
+  const r = await fetch('/api/access', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({allow_network: $('allowNet').checked, passphrase: $('passphrase').value})});
+  const j = await r.json();
+  if (j.error) { $('accessStatus').className = 'status bad'; $('accessStatus').textContent = j.error; return; }
+  $('passphrase').value = ''; unsaved = false; loadAccess(true);
+};
+loadAccess();
+$('test').onclick = async () => {
+  if (!(await save())) return;
+  const out = $('testOut'); out.style.display = 'block'; out.className = 'test'; out.textContent = 'Asking the model… (the first message after switching can take a while)';
+  const j = await (await fetch('/api/test_model', {method:'POST'})).json();
+  if (j.error) { out.className = 'test bad'; out.textContent = j.error; }
+  else out.textContent = `${j.model} · ${j.format} · ${j.seconds}s\n\n“${j.reply}”`;
+};
+</script>
+</body>
+</html>

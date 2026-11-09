@@ -1,0 +1,111 @@
+/* VersiDen colour themes, shared by every page.
+   Each theme sets a handful of base colours; everything else (hover borders, drawer, badges...)
+   is mixed from those. The default theme is Dusk Grove (no data-theme attribute). */
+
+:root {
+  color-scheme: dark;
+  --bg:#121015; --card:#1c1721; --field:#261f2c; --line:#352b3c; --text:#f0e9f3; --muted:#ada2b6; --dim:#7b7085;
+  --accent:#b48cf0; --on-accent:#170c24; --bubble:#4b2e66; --bubble-text:#f6eefc;
+  --good:#93c9a1; --warn:#e7b860; --bad:#ec7b8f;
+  /* hand-tuned extras for Dusk Grove */
+  --line-strong:#4a3d52; --them:#1c1721; --them-line:#30263a; --em:#b8adc0;
+  --here-bg:#2c2140; --here-text:#d8c3fa; --here-line:#4a3a63; --accent-soft:#b48cf088;
+  --avatar:#6a4790; --avatar-text:#ffffff; --drawer:#18141c; --journal:#16121a;
+  --placeholder:#6a5e72; --scroll:#3d3247; --scroll-hover:#54465c; --stage:#0d0b10;
+  --danger-line:#4a2a2a; --danger-btn:#5c2b2b; --link:#c9b0f5; --stop:#3d3247; --cont-small:#3d2a52;
+  --rose:#f1c6d8;
+}
+
+/* Every other theme: derive the extras from its base colours. */
+:root[data-theme] {
+  --line-strong: color-mix(in srgb, var(--line), var(--text) 14%);
+  --them: var(--card);
+  --them-line: color-mix(in srgb, var(--line) 75%, var(--card));
+  --em: color-mix(in srgb, var(--muted) 85%, var(--text));
+  --here-bg: color-mix(in srgb, var(--accent) 15%, var(--bg));
+  --here-text: color-mix(in srgb, var(--accent) 55%, var(--text));
+  --here-line: color-mix(in srgb, var(--accent) 35%, var(--bg));
+  --accent-soft: color-mix(in srgb, var(--accent) 55%, transparent);
+  --avatar: color-mix(in srgb, var(--accent) 55%, var(--bg));
+  --avatar-text: #ffffff;
+  --drawer: color-mix(in srgb, var(--bg) 65%, var(--card));
+  --journal: color-mix(in srgb, var(--bg) 82%, var(--card));
+  --placeholder: color-mix(in srgb, var(--dim) 80%, var(--bg));
+  --scroll: var(--line-strong);
+  --scroll-hover: color-mix(in srgb, var(--line-strong), var(--text) 18%);
+  --stage: color-mix(in srgb, var(--bg) 70%, #000);
+  --danger-line: color-mix(in srgb, var(--bad) 30%, var(--bg));
+  --danger-btn: color-mix(in srgb, var(--bad) 40%, var(--bg));
+  --link: var(--here-text);
+  --stop: var(--line-strong);
+  --cont-small: color-mix(in srgb, var(--on-accent) 72%, var(--accent));
+}
+
+/* ---------- dark themes */
+:root[data-theme="ember"]   { --bg:#14100d; --card:#211912; --field:#2b2118; --line:#3a2d22; --text:#f4ebe1; --muted:#b8a593; --dim:#8a7863;
+  --accent:#e8a15c; --on-accent:#24140a; --bubble:#5c3620; --bubble-text:#fbf1e6; --good:#9ccf9a; --warn:#e8c15c; --bad:#ee8270; }
+:root[data-theme="sea"]     { --bg:#0c1217; --card:#151e26; --field:#1c2731; --line:#263541; --text:#e6eff4; --muted:#9fb2bf; --dim:#71848f;
+  --accent:#7cc4e0; --on-accent:#06202c; --bubble:#1f4560; --bubble-text:#eef8fd; --good:#8fd1a8; --warn:#e9c46a; --bad:#f08a8a; }
+:root[data-theme="verdant"] { --bg:#0e130f; --card:#172019; --field:#1e2920; --line:#2a372b; --text:#e8f0e6; --muted:#a3b5a0; --dim:#748772;
+  --accent:#8fcf8a; --on-accent:#0d230f; --bubble:#2c4c2e; --bubble-text:#eef8ec; --good:#a6dba0; --warn:#e3c169; --bad:#ef8a7f; }
+:root[data-theme="crimson"] { --bg:#140b0e; --card:#22131a; --field:#2c1921; --line:#3d222d; --text:#f4e6ea; --muted:#bfa0aa; --dim:#8e717b;
+  --accent:#e57a92; --on-accent:#2a0b14; --bubble:#5c1f33; --bubble-text:#fcecf0; --good:#96cfa3; --warn:#e9bd62; --bad:#ff9b8a; }
+:root[data-theme="starfall"]{ --bg:#0a0e1a; --card:#131a2b; --field:#1a2338; --line:#253049; --text:#e4ecff; --muted:#9aa6c4; --dim:#6e7a98;
+  --accent:#5fd3e6; --on-accent:#05222a; --bubble:#1d3557; --bubble-text:#eef6ff; --good:#8fd6a6; --warn:#f0c674; --bad:#f28b9b; }
+:root[data-theme="neon"]    { --bg:#0b0a10; --card:#16141f; --field:#1e1b2a; --line:#2b2739; --text:#efeaf7; --muted:#a39bb6; --dim:#766e8a;
+  --accent:#ff4fd8; --on-accent:#2a0624; --bubble:#3d1748; --bubble-text:#fbeefa; --good:#7ee0b0; --warn:#ffd166; --bad:#ff6b8b; }
+:root[data-theme="frost"]   { --bg:#0f1419; --card:#18212a; --field:#202b36; --line:#2c3946; --text:#e9f1f7; --muted:#a5b4c2; --dim:#768592;
+  --accent:#a9d6ff; --on-accent:#0c2236; --bubble:#2a3f55; --bubble-text:#f1f8ff; --good:#9fd8b4; --warn:#ecc879; --bad:#f29a9a; }
+:root[data-theme="desert"]  { --bg:#15110b; --card:#221b11; --field:#2c2317; --line:#3c3020; --text:#f6ecda; --muted:#bba98c; --dim:#8b795c;
+  --accent:#e3c06b; --on-accent:#2a1f05; --bubble:#5b4320; --bubble-text:#fdf4e2; --good:#a8d49a; --warn:#f0b860; --bad:#ee8a72; }
+:root[data-theme="eldritch"]{ --bg:#0b0d0a; --card:#141812; --field:#1b2018; --line:#262d22; --text:#e3e8dc; --muted:#9aa391; --dim:#6e7765;
+  --accent:#b5d65a; --on-accent:#18230a; --bubble:#2c3a1f; --bubble-text:#eef5e4; --good:#9fd8a0; --warn:#e6c35c; --bad:#e8826f; }
+:root[data-theme="ink"]     { --bg:#000000; --card:#111111; --field:#1a1a1a; --line:#262626; --text:#ededed; --muted:#9a9a9a; --dim:#717171;
+  --accent:#d9d9d9; --on-accent:#111111; --bubble:#2a2a2a; --bubble-text:#f5f5f5; --good:#8fd19e; --warn:#e6c068; --bad:#f08080; }
+
+/* ---------- light themes */
+:root[data-theme="parchment"], :root[data-theme="sakura"], :root[data-theme="mist"] {
+  color-scheme: light;
+  --avatar: var(--accent); --em: var(--muted);
+  --here-bg: color-mix(in srgb, var(--accent) 12%, var(--card));
+  --here-text: color-mix(in srgb, var(--accent) 80%, var(--text));
+  --here-line: color-mix(in srgb, var(--accent) 40%, var(--card));
+  --drawer: var(--bg); --journal: color-mix(in srgb, var(--bg) 60%, var(--card));
+  --placeholder: color-mix(in srgb, var(--dim) 75%, var(--card));
+  --stage: #2b2b2b; --line-strong: color-mix(in srgb, var(--line), var(--text) 18%);
+  --danger-line: color-mix(in srgb, var(--bad) 35%, var(--card));
+  --danger-btn: color-mix(in srgb, var(--bad) 50%, var(--card));
+}
+:root[data-theme="parchment"] { --bg:#f4eee3; --card:#fffaf1; --field:#efe6d6; --line:#e0d4bf; --text:#2b241c; --muted:#665a4b; --dim:#7a6d5b;
+  --accent:#8a5a2b; --on-accent:#fffaf1; --bubble:#e7d9c2; --bubble-text:#2b241c; --good:#2f7a45; --warn:#8a5d00; --bad:#b4413a; }
+:root[data-theme="sakura"]    { --bg:#fbf3f5; --card:#ffffff; --field:#f6e8ed; --line:#ecd6de; --text:#3a2730; --muted:#6e5763; --dim:#83707a;
+  --accent:#b54a72; --on-accent:#ffffff; --bubble:#f3dbe4; --bubble-text:#3a2730; --good:#2f7a4f; --warn:#8a5d00; --bad:#b83a4f; }
+:root[data-theme="mist"]      { --bg:#eef2f5; --card:#ffffff; --field:#e5ebf0; --line:#d6dee5; --text:#1f2a33; --muted:#53616c; --dim:#6b7883;
+  --accent:#356f94; --on-accent:#ffffff; --bubble:#d9e6ef; --bubble-text:#1f2a33; --good:#2d7a4c; --warn:#8a5d00; --bad:#b23b3b; }
+
+/* ---------- accessibility */
+:root[data-theme="contrast"] { --bg:#000000; --card:#000000; --field:#0d0d0d; --line:#8a8a8a; --text:#ffffff; --muted:#e6e6e6; --dim:#cfcfcf;
+  --accent:#ffd400; --on-accent:#000000; --bubble:#1d1d1d; --bubble-text:#ffffff; --good:#5cff8a; --warn:#ffd400; --bad:#ff7070;
+  --line-strong:#ffffff; --them-line:#bdbdbd; --em:#e6e6e6; --here-bg:#262000; --here-text:#ffe666; --here-line:#ffd400;
+  --avatar:#ffd400; --avatar-text:#000000; --placeholder:#a8a8a8; --link:#ffe666; --dim:#cfcfcf; }
+
+/* Thin scrollbars that follow the theme, instead of Windows' bright default ones. */
+* { scrollbar-width: thin; scrollbar-color: var(--scroll) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scroll); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--scroll-hover); border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-button { display: none; height: 0; width: 0; }
+
+/* The theme picker (Aa menu and start screen). */
+.theme-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(34px, 1fr)); gap:8px; }
+.theme-group { font-size:12px; color:var(--dim); margin:10px 0 6px; }
+.theme-group:first-child { margin-top:0; }
+.theme-grid .theme-sw { position:relative; width:34px !important; height:34px !important; min-width:0 !important; border-radius:50% !important;
+            cursor:pointer; padding:0 !important; margin:0 !important; border:2px solid var(--line) !important; display:block !important;
+            background:conic-gradient(var(--sw-accent) 0 50%, var(--sw-bg) 50% 100%) !important; }
+.theme-grid .theme-sw:hover { border-color:var(--line-strong) !important; }
+.theme-grid .theme-sw.on { border-color:var(--text) !important; box-shadow:0 0 0 2px var(--card), 0 0 0 4px var(--accent); }
+.theme-sw:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+.theme-name { font-size:12.5px; color:var(--muted); margin-top:8px; min-height:1.2em; }

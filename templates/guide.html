@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Setup guide · {{ app_name }}</title>
+<link rel="icon" href="/static/icons/icon-192.png">
+<meta name="theme-color" content="#121015">
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="/static/theme.css">
+<script src="/static/theme.js"></script>
+<style>
+  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --accent:#b48cf0; --text:#f0e9f3; --muted:#ada2b6; --dim:#7b7085; --line:#352b3c;
+          --good:#93c9a1; --warn:#e7b860; --bad:#ec7b8f; }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; scroll-padding-top:70px; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.65 'Inter', system-ui, sans-serif; }
+  .top { display:flex; align-items:center; justify-content:space-between; padding:14px 24px; border-bottom:1px solid var(--line);
+         position:sticky; top:0; background:var(--bg); z-index:5; }
+  .top b { font-weight:600; }
+  .top a { color:var(--muted); text-decoration:none; font-size:14px; margin-left:18px; }
+  .top a:hover { color:var(--text); }
+  .layout { display:flex; max-width:1120px; margin:0 auto; gap:10px; }
+  nav { width:240px; flex-shrink:0; padding:26px 12px; position:sticky; top:52px; align-self:flex-start; max-height:calc(100vh - 52px); overflow:auto; }
+  nav a { display:block; color:var(--muted); text-decoration:none; font-size:14px; padding:6px 12px; border-radius:10px; }
+  nav a:hover { color:var(--text); background:var(--card); }
+  nav .ng { color:var(--dim); font-size:11.5px; text-transform:uppercase; letter-spacing:.07em; padding:16px 12px 4px; }
+  nav .ng:first-child { padding-top:0; }
+  main { flex:1; min-width:0; padding:26px 24px 120px; max-width:780px; }
+  h1 { font-size:28px; font-weight:650; margin:0 0 6px; }
+  .lead { color:var(--muted); margin:0 0 28px; font-size:16.5px; }
+  h2 { font-size:21px; font-weight:620; margin:48px 0 6px; padding-top:6px; border-top:1px solid var(--line); padding-top:28px; }
+  h2 .n { display:inline-flex; width:28px; height:28px; border-radius:50%; background:var(--accent); color:var(--on-accent); font-size:14px;
+          align-items:center; justify-content:center; margin-right:10px; vertical-align:2px; }
+  h3 { font-size:16.5px; font-weight:620; margin:26px 0 4px; }
+  p { margin:10px 0; }
+  .sub { color:var(--muted); margin-top:0; }
+  ol, ul { padding-left:22px; margin:10px 0; } li { margin:6px 0; }
+  ol li::marker { color:var(--muted); font-weight:600; }
+  code { background:var(--field); border-radius:6px; padding:1px 6px; font-size:14px; font-family:ui-monospace, Consolas, monospace; }
+  pre { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; overflow:auto; font-size:14px; }
+  pre code { background:none; padding:0; }
+  kbd { background:var(--field); border:1px solid var(--line); border-bottom-width:2px; border-radius:6px; padding:0 6px; font-size:13px; font-family:inherit; }
+  b, strong { font-weight:620; }
+  a { color:var(--link); }
+  .card { background:var(--card); border-radius:18px; padding:14px 18px; margin:14px 0; }
+  .tip { border-left:3px solid var(--accent); }
+  .warn { border-left:3px solid var(--warn); }
+  .card > :first-child { margin-top:0; } .card > :last-child { margin-bottom:0; }
+  .tag { font-size:12px; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; font-weight:600; display:block; margin-bottom:2px; }
+  table { border-collapse:collapse; width:100%; margin:12px 0; font-size:15px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:13px; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:0; margin-right:6px; }
+  .checklist li { list-style:none; margin-left:-22px; } .checklist li::before { content:'☐ '; color:var(--muted); }
+  @media (max-width: 860px) { nav { display:none; } main { padding:20px 18px 100px; } }
+  .printonly { display:none; }
+  /* the PDF / printed copy: light, no menus, each section starting cleanly */
+  @media print {
+    @page { size:A4; margin:16mm 16mm 18mm; }
+    html, body { background:#fff !important; color:#1d1d22; font-size:11pt; line-height:1.5; }
+    .top, nav { display:none !important; }
+    .layout { display:block; max-width:none; }
+    main { padding:0; max-width:none; }
+    .printonly { display:block; }
+    .brandline { font-size:11pt; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#7a4fc8; margin:0 0 6px; }
+    h1 { font-size:24pt; color:#111; }
+    .lead, .sub { color:#555; }
+    h2 { border-top:1px solid #e2e2e8; padding-top:14px; margin-top:22px; color:#111; font-size:16pt; break-after:avoid; }
+    h2#world, h2#settings, h2#models, h2#updating { break-before:page; border-top:none; padding-top:0; margin-top:0; }
+    h3 { color:#111; break-after:avoid; }
+    h2 .n { background:#7a4fc8; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    a { color:#6b3fb8; text-decoration:none; }
+    code, kbd { background:#f1f1f4; color:#1d1d22; border-color:#d8d8de; }
+    pre { background:#f6f6f8; border-color:#dcdce2; }
+    .card { background:#f6f6f8; border:1px solid #e2e2e8; break-inside:avoid; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .tip { border-left:3px solid #7a4fc8; } .warn { border-left:3px solid #e8a400; }
+    .tag { color:#777; }
+    table { font-size:10pt; } th { color:#555; } th, td { border-bottom:1px solid #dcdce2; }
+    tr, li { break-inside:avoid; }
+    small { color:#777 !important; }
+    .dot { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+  @media (max-width: 560px) { .top .full { display:none; } .top a { margin-left:12px; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <b style="display:flex;align-items:center;gap:8px"><img src="/static/icons/logo.svg" alt="" style="width:22px;height:22px"><span style="font-family:'Literata', Georgia, serif">{{ app_name }}</span><span class="full" style="color:var(--muted);font-weight:500"> · Setup guide</span></b>
+  <span><a href="/settings">⚙ Model Settings</a><a href="/start">← Back</a></span>
+</div>
+<div class="layout">
+<nav>
+  <div class="ng">Getting started</div>
+  <a href="#overview">How it fits together</a>
+  <a href="#need">What you need</a>
+  <a href="#python">1. Install Python</a>
+  <a href="#lmstudio">2. Set up LM Studio</a>
+  <a href="#install">3. Install the app</a>
+  <a href="#start">4. Start the app</a>
+  <div class="ng">Using it</div>
+  <a href="#world">Your first world</a>
+  <a href="#story">Starting a story</a>
+  <a href="#chat">In the chat</a>
+  <a href="#writing">Better replies</a>
+  <a href="#settings">Settings explained</a>
+  <a href="#models">Choosing a model</a>
+  <a href="#testing">Testing a new model</a>
+  <a href="#phone">On your phone</a>
+  <div class="ng">Looking after it</div>
+  <a href="#updating">Updating the app</a>
+  <a href="#files">Your files &amp; backups</a>
+  <a href="#trouble">Troubleshooting</a>
+</nav>
+<main>
+  <p class="printonly brandline">{{ app_name }}</p>
+  <h1>Setup guide</h1>
+  <p class="printonly" style="color:#777;font-size:10pt;margin:0 0 10px">The same guide is built into the app: open it and click <b>? Guide</b>.</p>
+  <p class="lead">Everything you need to get {{ app_name }} running on your own PC, from a fresh Windows install to your first story. No programming needed: each step says exactly where to click.</p>
+
+  <h2 id="overview">How it fits together</h2>
+  <p>Three pieces, all on your own PC:</p>
+  <table>
+    <tr><th>Piece</th><th>What it does</th></tr>
+    <tr><td><b>LM Studio</b></td><td>Runs the AI model on your graphics card. It's the "brain", and works without the internet once the model is downloaded.</td></tr>
+    <tr><td><b>{{ app_name }}</b></td><td>This app. It keeps your worlds, characters and stories, builds what the model reads, and shows the chat in your browser.</td></tr>
+    <tr><td><b>Your browser</b></td><td>Where you chat, on this PC at <code>{{ pc_url }}</code>, or on your phone over your home Wi-Fi.</td></tr>
+  </table>
+  <p>Nothing is sent anywhere else. Your stories are plain text files in a folder on your PC.</p>
+
+  <h2 id="need">What you need</h2>
+  <ul>
+    <li><b>A Windows PC with an NVIDIA graphics card</b>, ideally with 8 GB of video memory or more (e.g. RTX 3060, 4060, 4070). Other cards work in LM Studio too, just slower.</li>
+    <li><b>About 15 GB of free disk space</b>: most of it for the model.</li>
+    <li><b>About 30 minutes</b> for the first setup, mostly waiting for downloads.</li>
+  </ul>
+
+  <h2 id="python"><span class="n">1</span>Install Python</h2>
+  <p class="sub">The app is written in Python, so Windows needs it installed once.</p>
+  <ol>
+    <li>Go to <b>python.org → Downloads</b> and download the latest Python for Windows (3.11 or newer).</li>
+    <li>Run the installer. On the first screen, <b>tick "Add python.exe to PATH"</b> at the bottom. This matters: without it, Windows can't find Python later.</li>
+    <li>Click <b>Install Now</b> and wait until it says it's done.</li>
+  </ol>
+  <div class="card tip"><span class="tag">Check</span>
+    Press <kbd>Win</kbd>, type <code>cmd</code>, press <kbd>Enter</kbd>. In the black window type <code>python --version</code> and press <kbd>Enter</kbd>. You should see something like <code>Python 3.12.4</code>.
+  </div>
+
+  <h2 id="lmstudio"><span class="n">2</span>Set up LM Studio</h2>
+  <h3>Install it and download a model</h3>
+  <ol>
+    <li>Download <b>LM Studio</b> from <b>lmstudio.ai</b> and install it.</li>
+    <li>Click the <b>🔍 magnifying glass</b> in its left sidebar and search for a model. Two good starting points for a card with 12 GB:
+      <ul>
+        <li><b>Qwen3.5 9B</b>: fast, good all-rounder.</li>
+        <li><b>MN-12B-Mag-Mell-R1</b> (12B, search <b>Mag-Mell</b>): our pick for roleplay. Natural prose, follows your story, open to mature content.</li>
+        <li><b>Mistral Nemo Instruct 2407</b> (12B): steady and reliable, keeps things tame.</li>
+      </ul>
+      With 8 GB, stay around 7–9B. See <a href="#models">Choosing a model</a>
+  <a href="#testing">Testing a new model</a>.</li>
+    <li>In the download options on the right, pick <b>Q4_K_M</b> (a good balance of size and quality) and click <b>Download</b>.</li>
+  </ol>
+  <h3>Set how much it can remember</h3>
+  <ol>
+    <li>Click <b>My Models</b> (the folder icon on the left), then the <b>⚙ gear</b> next to your model.</li>
+    <li>Set <b>Context Length</b> to <b>16384</b>. If LM Studio warns that the model no longer fits fully on the GPU, use <b>12288</b> or <b>8192</b>.</li>
+  </ol>
+  <h3>Let it run in the background</h3>
+  <ol>
+    <li>Open LM Studio's settings: <kbd>Ctrl</kbd> + <kbd>,</kbd></li>
+    <li>Click <b>Developer</b> on the left.</li>
+    <li>Turn on <b>Enable Local LLM Service</b> (under "Local LLM Service (headless)"). The model server now runs whenever you're logged in, even with the LM Studio window closed.</li>
+    <li>On the same page, keep <b>Just-in-time model loading</b> on. LM Studio then loads the model by itself when the first message arrives, and unloads it after a while without use (Max idle TTL) to free your graphics card.</li>
+  </ol>
+  <div class="card tip"><span class="tag">Check</span>
+    Open <code>http://localhost:1234/v1/models</code> in your browser. A page of text listing your model means LM Studio is ready.
+  </div>
+
+  <h2 id="install"><span class="n">3</span>Install the app</h2>
+  <ol>
+    <li>Unzip the <b>{{ app_name }}</b> zip (the one you were sent, or from GitHub: <b>Code → Download ZIP</b>) somewhere permanent, e.g. <code>Documents\{{ app_name }}</code>. Not in Downloads, since you'll keep using this folder. To unzip: right-click the zip → <b>Extract All…</b></li>
+    <li>Open that folder in File Explorer. Click the <b>address bar</b> at the top, type <code>cmd</code> and press <kbd>Enter</kbd>. A black window opens, already in the right folder.</li>
+    <li>Type this and press <kbd>Enter</kbd>:
+      <pre><code>pip install -r requirements.txt</code></pre>
+      Wait until it finishes (a minute or two), then close the black window. You only do this once, and again after an update that adds new add-ons.</li>
+  </ol>
+
+  <h2 id="start"><span class="n">4</span>Start the app</h2>
+  <ol>
+    <li>Double-click <b><code>start.bat</code></b> in the app's folder.</li>
+    <li>After a few seconds your browser opens the app, and a small <b>blue speech-bubble icon</b> appears near the clock. If you don't see it, click the <b>^</b> arrow next to the clock.</li>
+    <li>Right-click the icon and tick <b>Start with Windows</b>. From now on the app is there whenever your PC is on.</li>
+    <li>Bookmark <code>{{ pc_url }}</code>.</li>
+  </ol>
+  <h3>The tray icon</h3>
+  <table>
+    <tr><th>Menu item</th><th>What it does</th></tr>
+    <tr><td><b>Open</b></td><td>Opens the app in your browser (also: left-click the icon)</td></tr>
+    <tr><td><b>Phone access…</b></td><td>Opens Settings, where phone access is</td></tr>
+    <tr><td><b>Restart</b></td><td>Restarts the app, e.g. after an update or changing phone access</td></tr>
+    <tr><td><b>Show log</b></td><td>Opens the app's log, useful when something goes wrong</td></tr>
+    <tr><td><b>Start with Windows</b></td><td>Start the app automatically when you log in</td></tr>
+    <tr><td><b>Quit</b></td><td>Stops the app. Closing the browser tab doesn't; the app keeps running in the background</td></tr>
+  </table>
+
+  <h2 id="world">Your first world</h2>
+  <p class="sub">A world holds everything for one setting: its rules and places, its characters, side characters, and who you play as. Characters in one world can only meet players from that world.</p>
+  <p>On the start screen, click <b>+ New world</b>. The editor has two groups of steps:</p>
+  <h3>World</h3>
+  <ul>
+    <li><b>The basics</b>: name, genre, tone, era.</li>
+    <li><b>World foundations</b>: what every character always knows. The <b>World overview</b>, <b>World rules</b> (magic, technology, what's impossible), <b>Peoples &amp; Species</b>, <b>Politics &amp; Current Affairs</b>, and the <b>Writing format</b> every reply follows. These are sent with every message, so keep them to the essentials.</li>
+    <li><b>Places &amp; Lore</b>: details that are only added when their name comes up in the chat: towns, factions, history, objects. Add as many as you like. Tick <b>Always on</b> only for something every character must always know.</li>
+  </ul>
+  <h3>People</h3>
+  <ul>
+    <li><b>Characters</b>: who you roleplay with. Their sheet has four parts: <b>Who they are</b> (name, age, appearance, personality, flaws), <b>Inner life</b> (motives and beliefs, love and relationships, backstory), <b>In the world</b> (skills, daily life, people, likes and dislikes, key memories) and <b>Voice</b> (how they speak). Only name and personality are needed; the rest open with <b>+ Add</b>. Plus one or more <b>story premises</b> (ways a story with them can begin).</li>
+    <li><b>NPCs</b>: side characters of the world who join a scene when they're mentioned (you don't chat with them directly), with their own memories and status (an NPC who dies stays dead in that story).</li>
+    <li><b>Players</b>: who you play as. <b>Public</b> is what anyone would know about you; <b>Private</b> is never sent to the model.</li>
+  </ul>
+  <div class="card tip"><span class="tag">Tip</span>
+    Every field has an <b>ⓘ</b> with an explanation, and empty fields show a greyed-out example. After the first setup you can edit characters and players straight from the start screen (<b>✎ Edit</b>) without going through the steps.
+  </div>
+
+  <h2 id="story">Starting a story</h2>
+  <ol>
+    <li>On the start screen, pick the world, then under a character choose who you <b>Play as</b>.</li>
+    <li>Click <b>Start new story</b>. <b>Set the scene</b> opens: pick one of the character's premises, tweak the text if you like, and choose whether the character speaks first or you open the scene.</li>
+    <li>Click <b>Start story</b>. Next time, the same button says <b>Continue</b>.</li>
+  </ol>
+  <p>By default a character has never met your player: they don't know your name until you tell them, unless the premise says you know each other.</p>
+
+  <h2 id="chat">In the chat</h2>
+  <ul>
+    <li><b>Send</b> with <kbd>Enter</kbd>, new line with <kbd>Shift</kbd> + <kbd>Enter</kbd>. Write actions in <code>*asterisks*</code>.</li>
+    <li><b>■ Stop</b> stops a reply mid-way. <b>Reroll</b> under the last reply writes another version; flip between versions with <b>‹ ›</b>.</li>
+    <li>Hover a message (tap on a phone) to <b>edit</b> or <b>delete</b> it.</li>
+    <li><b>Let someone speak</b>: the chips above the message box let the character continue, or an NPC jump in. Type <code>@</code> to address an NPC directly.</li>
+    <li>The pill in the message box sets the story's <b>flair</b> (Roleplay, Storyteller, Companion, Casual, or None).</li>
+    <li><b>Journal</b> (top right) shows the <b>current location</b>, what the character has learned about you, where you stand, key events, and each NPC's status. It updates itself as you play, and you can edit it. The location also shows under the character's name (📍), and that place's Places &amp; Lore entry stays loaded while you're there, so write region first (e.g. "Aestria, the road to Houlton"). You can set where a story begins in <b>Set the scene</b>.</li>
+    <li><b>Aa</b> changes text size, font and <b>colour theme</b> (15 themes, dark and light; also under <b>◐ Theme</b> on the start screen, saved per device). A <b>chat background</b> picture can be added per character (in their editor, under the portrait) or for a whole world (under The basics); Aa lets you dim it or turn it off. <b>⇔</b> changes the chat width. <b>⇄</b> (top left) switches story.</li>
+    <li>The dot next to the model name: <span class="dot" style="background:var(--good)"></span>ready, <span class="dot" style="background:var(--warn)"></span>model will load on your next message (takes a few seconds), <span class="dot" style="background:var(--bad)"></span>LM Studio can't be reached.</li>
+  </ul>
+  <p>Long chats don't get lost: older messages are folded into short summaries the character keeps, shown as a line in the chat.</p>
+
+  <h2 id="writing">Better replies</h2>
+  <p class="sub">Small local models copy examples far more than they follow descriptions. In order of impact:</p>
+  <ol>
+    <li><b>Example message</b> (character page): write one reply exactly the way you want replies to look, in length, layout and tone. This is the strongest lever.</li>
+    <li><b>Writing format</b> (World foundations): the layout rules for everyone in the world, e.g. <i>"Third person, present tense. Actions in *asterisks*, speech on its own line. Keep replies under 750 characters."</i></li>
+    <li><b>Response directive</b> (character page): their voice in a few words. It's read before every reply, so keep it short and leave out anything situational.</li>
+    <li><b>Personality</b>: describe what they <i>do</i> ("teases with a straight face") rather than adjectives ("smug, dramatic"), which small models exaggerate.</li>
+    <li><b>Creativity</b> around 0.8–0.9 and flair <b>None</b> if replies feel over-the-top.</li>
+  </ol>
+  <p>After changing a character, start a new story to test: an existing chat's history also shapes the style.</p>
+
+  <h2 id="settings">Settings explained</h2>
+  <table>
+    <tr><th>Setting</th><th>What it does</th></tr>
+    <tr><td><b>Model</b></td><td>Which LM Studio model answers. Also switchable from the model name in the chat header.</td></tr>
+    <tr><td><b>Prompt format</b></td><td>Leave on <b>Auto</b>. It uses Qwen's own layout for Qwen models and the model's built-in template for everything else.</td></tr>
+    <tr><td><b>Default flair</b></td><td>The style nudge new stories start with (switch per story in the message box).</td></tr>
+    <tr><td><b>Reasoning effort</b></td><td>Lets Qwen think before replying. Slower; only available for Qwen models.</td></tr>
+    <tr><td><b>Creativity</b></td><td>Lower is steadier, higher is more surprising (and more likely to drift).</td></tr>
+    <tr><td><b>Repetition penalty</b></td><td>Raise slightly if a character keeps repeating phrases.</td></tr>
+    <tr><td><b>Reply length cap</b></td><td>A safety limit, not a target. Ask for short replies in the Writing format instead.</td></tr>
+    <tr><td><b>Mature content</b></td><td>Off by default. On allows mature content between consenting adults; characters can opt out. Whether it's written also depends on the model.</td></tr>
+    <tr><td><b>Memory size</b></td><td>How much the app sends per message. Leave it on <b>Automatic</b>: it uses about ¾ of the Context Length the model is loaded with, and adjusts when you switch models. Untick it to set a fixed number.</td></tr>
+  </table>
+
+  <h2 id="models">Choosing a model</h2>
+  <p class="sub">The model decides how well characters write, how much they remember and what they're willing to write. The app works with any chat model in LM Studio, and switching is one click in the chat header.</p>
+
+  <h3>How to pick one</h3>
+  <ul>
+    <li><b>Size</b>: pick a model whose download (in <b>Q4_K_M</b>) is a few GB smaller than your video memory, so the conversation fits on the card too.</li>
+    <li><b>Roleplay versions</b> (fine-tunes) are trained on fiction and usually write more naturally than the plain "Instruct" models. Pick ones with many downloads, and read their page in LM Studio.</li>
+    <li><b>Who uploaded it matters.</b> The same model is often uploaded by several people. Prefer the model's makers, <b>lmstudio-community</b>, <b>bartowski</b> or <b>mradermacher</b>. For mradermacher, the <b>i1</b> versions are slightly better at the same size.</li>
+    <li>Skip models with <b>"Thinking"</b> in the name for roleplay: they reason before every reply, which mostly adds waiting.</li>
+  </ul>
+
+  <h3>Suggestions by graphics card</h3>
+  <p>Popular choices at the time of writing; newer ones appear all the time, so it's worth a look at what's popular when you set up.</p>
+  <table>
+    <tr><th>Video memory</th><th>Try</th><th>Context Length</th></tr>
+    <tr><td><b>6–8 GB</b><br><small style="color:var(--dim)">RTX 3060 Ti, 4060, 2070</small></td>
+        <td><b>Stheno v3.2</b> (Llama 3, 8B): lively roleplay.<br><b>Lumimaid v0.2 8B</b> (Llama 3.1): roleplay, very open to mature content.<br><b>Qwen3.5 9B</b>: reliable all-rounder, cautious with mature content.</td>
+        <td>8192</td></tr>
+    <tr><td><b>10–12 GB</b><br><small style="color:var(--dim)">RTX 3060 12 GB, 3080, 4070</small></td>
+        <td><b>Mag-Mell 12B</b> (MN-12B-Mag-Mell-R1): our pick. Balanced roleplay that waits for the story.<br><b>Mistral Nemo Instruct 2407</b> (12B): the most rule-following, tame with mature content.<br>Other Mistral Nemo roleplay versions worth a try: <b>Irix 12B</b>, <b>Angelic Eclipse 12B</b> (slow burn), <b>Celeste 12B</b> (drives the story), <b>Wayfarer-2 12B</b> (grim adventure). (RPMax v1.3 writes gibberish on some setups.)<br>Or any of the 8B models above with more room for context.</td>
+        <td>12288–16384</td></tr>
+    <tr><td><b>16 GB</b><br><small style="color:var(--dim)">RTX 4060 Ti 16 GB, 4070 Ti Super, 4080</small></td>
+        <td>The 12B models in a higher-quality size (<b>Q6_K</b>) with 16K+ context, or a 22–24B model (Mistral Small based) in a smaller size (<b>IQ4_XS</b>).</td>
+        <td>16384</td></tr>
+    <tr><td><b>24 GB</b><br><small style="color:var(--dim)">RTX 3090, 4090</small></td>
+        <td><b>Mistral Small 24B roleplay versions</b> in Q4_K_M: noticeably better memory and character voice than the 12B models.</td>
+        <td>16384–32768</td></tr>
+  </table>
+  <p>Llama 3 based models (like Stheno v3.2) are built for <b>8192</b>; setting them higher makes them worse. Llama 3.1, Mistral Nemo, Mistral Small and Qwen handle more.</p>
+
+  <h3>How the popular kinds compare</h3>
+  <table>
+    <tr><th></th><th>Mag-Mell (12B)</th><th>Nemo Instruct (12B)</th><th>Stheno (8B)</th><th>Lumimaid (8B)</th><th>Qwen3.5 (9B)</th></tr>
+    <tr><td><b>Writing</b></td><td>Natural and in-character; keeps track of the story</td><td>Most coherent, a bit plain</td><td>Lively, expressive, strong character voice</td><td>Expressive, less consistent</td><td>Clear and reliable, a bit "assistant-like"</td></tr>
+    <tr><td><b>Follows your setup</b></td><td>Very good</td><td>Best</td><td>Good, takes some liberties</td><td>Drifts the most</td><td>Good</td></tr>
+    <tr><td><b>Mature content</b></td><td>Willing when the story gets there</td><td>Willing but tame</td><td>Very willing</td><td>Very willing, most explicit</td><td>Mostly fades to black</td></tr>
+    <tr><td><b>Pacing</b></td><td>Follows your lead</td><td>Slow burn</td><td>Can rush romance</td><td>Most eager</td><td>Slow, careful</td></tr>
+    <tr><td><b>Speed</b></td><td>Slower</td><td>Slower</td><td>Fast</td><td>Fast</td><td>Fast</td></tr>
+  </table>
+  <p>For any model, the most reliable way to set romantic pacing is the character's own <b>Love and relationships</b> section, e.g. "slow to trust, falls in love slowly". Rerolls on Mag-Mell can come out quite similar; that's the model, not the app. For eager models, write pacing into the character ("falls in love slowly") or the world's Writing format ("romance only when {user} clearly leads there"), keep Creativity around 0.8, and use <b>Never mature content</b> on characters who should stay clean.</p>
+
+  <h3 id="testing">Testing a new model</h3>
+  <ol>
+    <li><b>Test it in LM Studio first.</b> In LM Studio's own <b>Chat</b> tab, load the model and say "Hello". You should get a normal sentence. If LM Studio's chat already gives nonsense, the problem is the model or LM Studio, not the app, so don't continue until this works.</li>
+    <li><b>Set its Context Length</b> (My Models → ⚙) before it's first used, then <b>Eject</b> it so the next load uses the new setting. A newly downloaded model starts with a small default.</li>
+    <li><b>Pick it in the app</b> from the model menu in the chat header and click <b>Model Settings → Test model</b> for a quick check through the app.</li>
+    <li><b>Compare fairly:</b> start a <i>new</i> story with the same character and use <b>Reroll</b> a few times. Existing chats carry the old model's style.</li>
+    <li>Open the model menu: if it says <b>Shorter memory</b>, the model's Context Length is on the small side. It still works, the app fits itself to it, but raising it in LM Studio lets the character remember more.</li>
+  </ol>
+  <div class="card warn"><span class="tag">If a model writes gibberish</span>
+    <p>Symbols, dots or a jumble of languages (in LM Studio's chat as well) mean that copy of the model doesn't run on your setup. In order:</p>
+    <ol>
+      <li>Reset its load settings: My Models → ⚙, keep <b>K/V cache quantization</b> off, then Eject and try again.</li>
+      <li>Try another upload of the same model (another uploader in the search results).</li>
+      <li>Try another <b>version</b> of the model (e.g. v1.2 instead of v1.3): sometimes a release itself is faulty.</li>
+      <li>Update LM Studio's engine: Settings → <b>Runtime</b> (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>R</kbd>), update the llama.cpp engines, or switch between CUDA and Vulkan.</li>
+      <li>Still nothing: pick a model of another family (e.g. a Llama based one instead of Mistral).</li>
+    </ol>
+    <p>The app refuses to save replies that are just symbols, and keeps the last request and the model's raw answer in <code>logs\last-reply.txt</code> for troubleshooting.</p>
+  </div>
+  <div class="card warn"><span class="tag">If replies look broken in other ways</span>
+    Replies that start with the character's name, contain odd tags like <code>&lt;|im_start|&gt;</code>, or never stop usually mean a prompt format mismatch. Check <b>Model Settings → Prompt format</b> is on <b>Auto</b>, or try <b>Model's own template</b>, then <b>Test model</b>.
+  </div>
+
+  <h2 id="phone">On your phone</h2>
+  <ol>
+    <li>On the PC: <b>⚙ Model Settings → Phone &amp; Other Devices</b>. Tick <b>Allow devices on my home network</b>, set a <b>passphrase</b> and click <b>Save access</b>.</li>
+    <li>Right-click the tray icon → <b>Restart</b>. The first time, Windows asks whether to allow Python on networks: tick <b>Private networks</b> and click <b>Allow</b>.</li>
+    <li>On your phone, on the <b>same Wi-Fi</b>, open the address shown in Model Settings (like <code>http://192.168.1.23:5000</code>) and enter the passphrase once.</li>
+    <li>To make it feel like an app: Safari <b>Share → Add to Home Screen</b> (Android: <b>⋮ → Add to Home screen</b>).</li>
+  </ol>
+  <p>It works while the PC is on. The PC itself never asks for the passphrase; changing it logs other devices out.</p>
+
+  <h2 id="updating">Updating the app</h2>
+  <ol>
+    <li>Copy the new files over the old ones in the app's folder (Windows: <b>Replace the files in the destination</b>). Your worlds are in the <code>worlds</code> folder, which updates never include, so nothing of yours is touched.</li>
+    <li>Then, depending on what changed:
+      <ul>
+        <li>only files in <code>templates</code> or <code>static</code>: refresh the page (<kbd>F5</kbd>);</li>
+        <li><code>app.py</code>: tray icon → <b>Restart</b>, then refresh;</li>
+        <li><code>tray.pyw</code>: tray icon → <b>Quit</b>, then <code>start.bat</code>;</li>
+        <li><code>requirements.txt</code>: run the <code>pip install</code> line from step 3 again first.</li>
+      </ul></li>
+  </ol>
+  <p>If a page says the app needs a restart, that's the sign the page was updated but the app wasn't restarted yet.</p>
+
+  <h2 id="files">Your files &amp; backups</h2>
+  <ul>
+    <li>Everything lives in the <code>worlds</code> folder inside the app's folder: one folder per world, with readable <code>.md</code> text files you can also edit in Notepad or Obsidian.</li>
+    <li>A <b>backup zip</b> is made once a day in <code>backups</code>; the last 7 are kept. To restore, quit the app and unzip one over the <code>worlds</code> folder.</li>
+    <li><b>Deleting</b> anything in the app moves it to <code>worlds\.trash</code>, so it can be recovered.</li>
+    <li><b>Export / Import</b> on a character's or player's page saves them as one <code>.json</code> file (with portrait and premises, never your stories), to keep a copy or share with a friend.</li>
+    <li>Advanced settings (port, address, folder location) are in <code>config.toml</code>; restart after changing it.</li>
+  </ul>
+
+  <h2 id="trouble">Troubleshooting</h2>
+  <table>
+    <tr><th>What you see</th><th>What to do</th></tr>
+    <tr><td>Red dot, "LM Studio isn't reachable"</td><td>Check that <b>Enable Local LLM Service</b> is on in LM Studio (step 2), or open LM Studio. Test with <code>http://localhost:1234/v1/models</code>.</td></tr>
+    <tr><td>Orange dot</td><td>Nothing's wrong: the model isn't loaded yet and will load on your next message.</td></tr>
+    <tr><td>The page doesn't open at all</td><td>The app isn't running: double-click <code>start.bat</code>. Still nothing? Run <code>start-with-console.bat</code> to see the error.</td></tr>
+    <tr><td>"The app needs a restart" / a button does nothing after an update</td><td>Tray icon → <b>Restart</b>, then refresh the page.</td></tr>
+    <tr><td>Replies are gibberish (symbols, dots, mixed languages)</td><td>The model copy doesn't run on your setup. See <a href="#testing">If a model writes gibberish</a>.</td></tr>
+    <tr><td>Empty or cut-off replies</td><td>Raise <b>Reply length cap</b>, or set <b>Reasoning effort</b> to Off.</td></tr>
+    <tr><td>Character forgets things / mixes things up</td><td>Raise the model's <b>Context Length</b> in LM Studio (e.g. 16384); with Memory size on Automatic the app uses the extra room by itself. Put must-never-forget facts in <b>Key memories</b>.</td></tr>
+    <tr><td>Very slow replies</td><td>The model may not fit on your graphics card: lower Context Length in LM Studio, or use a smaller model.</td></tr>
+    <tr><td><code>'python' is not recognized</code></td><td>Python was installed without "Add to PATH". Run the Python installer again, choose <b>Modify</b>, and tick <b>Add Python to environment variables</b>.</td></tr>
+    <tr><td><code>No module named 'flask'</code></td><td>Run the <code>pip install -r requirements.txt</code> step again.</td></tr>
+    <tr><td>Phone can't connect</td><td>Same Wi-Fi? Restarted after turning access on? Allowed Python through the Windows firewall for <b>Private networks</b>?</td></tr>
+  </table>
+  <p>Still stuck? Right-click the tray icon → <b>Show log</b>. The last lines usually say what went wrong.</p>
+</main>
+</div>
+</body>
+</html>

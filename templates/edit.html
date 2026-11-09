@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>World editor · VersiDen</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<link rel="icon" href="/static/icons/icon-192.png">
+<meta name="theme-color" content="#121015">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="/static/theme.css">
+<script src="/static/theme.js"></script>
+<style>
+  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --text:#f0e9f3; --muted:#ada2b6; --dim:#7b7085;
+          --accent:#b48cf0; --line:#352b3c; --warn:#e7b860; --bad:#ec7b8f; --good:#93c9a1; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.55 'Inter', system-ui, sans-serif; }
+  a { color:inherit; }
+  .top { display:flex; align-items:center; justify-content:space-between; padding:14px 24px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--bg); z-index:5; }
+  .top b { font-weight:600; }
+  .top a { color:var(--muted); text-decoration:none; font-size:14px; }
+  .layout { display:flex; max-width:1100px; margin:0 auto; }
+  nav { width:230px; padding:24px 12px; flex-shrink:0; position:sticky; top:52px; align-self:flex-start; }
+  nav button { display:flex; gap:10px; align-items:center; width:100%; text-align:left; background:none; border:0; color:var(--muted);
+               padding:9px 12px; border-radius:10px; font:inherit; cursor:pointer; }
+  nav button .n { width:22px; height:22px; border-radius:50%; border:1px solid var(--line); display:inline-flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
+  nav button.on { background:var(--card); color:var(--text); }
+  nav .ngroup { color:var(--dim); font-size:11.5px; text-transform:uppercase; letter-spacing:.07em; padding:16px 12px 6px; }
+  nav .ngroup:first-child { padding-top:0; }
+  nav .ngroup:empty { border-top:1px solid var(--line); padding:0; margin:14px 12px 10px; }
+  nav button.on .n { border-color:var(--accent); background:var(--accent); color:var(--on-accent); }
+  nav button:disabled { opacity:.35; cursor:default; }
+  main { flex:1; padding:24px 24px 120px; max-width:760px; }
+  h1 { font-size:22px; font-weight:600; margin:4px 0 4px; }
+  .lead { color:var(--muted); margin:0 0 22px; }
+  .section-title { display:flex; align-items:center; justify-content:center; gap:6px; color:var(--muted); font-size:14px; margin:26px 0 12px; }
+
+  /* ---- the cards */
+  .card { background:var(--card); border-radius:22px; padding:14px 16px 16px; margin-bottom:14px; }
+  .card-head { display:flex; align-items:center; gap:8px; margin:0 4px 10px; font-size:14px; }
+  .card-head .info { width:16px; height:16px; border:1.4px solid var(--muted); border-radius:50%; display:inline-flex; align-items:center;
+                     justify-content:center; font-size:10px; font-weight:700; color:var(--muted); cursor:help; flex-shrink:0; }
+  .card-head .grow { flex:1; }
+  .card-head .count { color:var(--dim); font-size:13px; font-variant-numeric:tabular-nums; }
+  .card-head .count.over { color:var(--warn); }
+  .mem { background:var(--card); border-radius:16px; padding:12px 16px; margin-bottom:14px; font-size:13.5px; color:var(--muted); }
+  .mem .bar { margin-top:8px; }
+  .card-head .expand { background:none; border:0; color:var(--muted); cursor:pointer; font-size:15px; padding:0 2px; }
+  .card textarea, .card input[type=text], .card select { width:100%; background:var(--field); color:var(--text); border:0; border-radius:16px;
+                     padding:14px 16px; font:inherit; outline:none; }
+  .card textarea::placeholder, .card input::placeholder { color:var(--placeholder); }
+  .card.collapsed { padding-top:10px; padding-bottom:10px; cursor:pointer; }
+  .card.collapsed textarea, .card.collapsed .count, .card.collapsed .expand { display:none; }
+  .card.collapsed .card-head { margin:0; }
+  .card.collapsed:hover { border-color:var(--line-strong); }
+  .opt-add { display:none; color:var(--accent); font-size:13px; order:3; margin-left:auto; }
+  .card.collapsed .opt-add { display:inline; }
+  .section-title + .card.collapsed, .card.collapsed + .card.collapsed { margin-top:-4px; }
+  .sortbar { display:flex; gap:12px; align-items:center; background:var(--here-bg); border:1px solid var(--here-line); border-radius:14px; padding:12px 14px; margin:4px 0 14px; }
+  .sortbar[hidden] { display:none; }
+  .sortbar p { flex:1; margin:0; font-size:13.5px; color:var(--here-text); }
+  .sortlist { margin:12px 0 0; padding:0; list-style:none; max-height:50vh; overflow:auto; }
+  .sortlist li { display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-top:1px solid var(--line); font-size:13.5px; }
+  .sortlist li small { display:block; color:var(--dim); white-space:pre-line; max-height:3.2em; overflow:hidden; }
+  .sortlist b { color:var(--text); font-weight:600; }
+  .sortlist input { accent-color:var(--accent); margin-top:3px; }
+  .explain { background:var(--card); border-radius:16px; padding:12px 16px; margin:0 0 16px; font-size:14px; color:var(--muted); }
+  .explain b { color:var(--text); font-weight:600; }
+  .explain ul { margin:6px 0 0; padding-left:18px; } .explain li { margin:4px 0; }
+  .card textarea { resize:vertical; min-height:56px; line-height:1.6; }
+  .card textarea:focus, .card input[type=text]:focus, .card select:focus { box-shadow:0 0 0 1px var(--line-strong) inset; }
+  .card input[type=color] { width:52px; height:40px; border:0; background:none; cursor:pointer; }
+  .portrait { display:flex; align-items:center; gap:14px; }
+  .bgcard .bgrow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .bgcard .bgrow .ptext { flex:1 1 260px; font-size:14px; }
+  .bgcard .pbtns { display:flex; gap:8px; }
+  .bgpic { margin-top:12px; aspect-ratio:16/7; border-radius:12px; background:var(--field) center/cover no-repeat; border:1px solid var(--line); }
+  .bgpic.empty { display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:13px; aspect-ratio:16/3; }
+  .portrait .pic { width:64px; height:64px; border-radius:50%; background:var(--avatar); display:flex; align-items:center; justify-content:center;
+                   font-size:24px; font-weight:600; overflow:hidden; flex-shrink:0; }
+  .portrait .pic img { width:100%; height:100%; object-fit:cover; }
+  .portrait .ptext { flex:1; font-size:14px; }
+  .portrait .phint, .bgcard .phint { color:var(--dim); font-size:13px; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .row2 .card { margin-bottom:0; } .row2 { margin-bottom:14px; }
+  details.card > div > .card { background:transparent; padding:8px 0 0; margin-bottom:6px; }
+  .check { display:flex; gap:10px; align-items:center; padding:4px 6px; color:var(--text); cursor:pointer; flex-wrap:wrap; }
+  .check small { color:var(--dim); font-size:13px; }
+  .chip .pin { color:var(--accent); margin-left:6px; font-size:10px; vertical-align:1px; }
+
+  /* ---- item lists */
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 18px; }
+  .chip { background:var(--card); border:1px solid var(--line); color:var(--text); border-radius:999px; padding:6px 14px; cursor:pointer; font:inherit; font-size:14px; }
+  .chip.on { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
+  .chip.add { color:var(--muted); border-style:dashed; }
+  .chip small { color:var(--dim); margin-left:4px; }
+  .empty { color:var(--dim); font-size:14px; padding:10px 4px 20px; }
+
+  .meter { background:var(--card); border-radius:16px; padding:12px 16px; margin-bottom:16px; font-size:14px; color:var(--muted); }
+  .bar { height:6px; background:var(--field); border-radius:3px; margin-top:8px; overflow:hidden; }
+  .bar div { height:100%; background:var(--good); width:0; transition:width .2s; }
+
+  .actions { position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:1px solid var(--line); padding:12px 24px; display:flex; justify-content:center; }
+  .actions .inner { width:100%; max-width:1100px; display:flex; gap:10px; align-items:center; }
+  .actions .status { flex:1; color:var(--muted); font-size:14px; }
+  .btn { background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:10px 18px; font:inherit; cursor:pointer; }
+  .btn.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  .btn:disabled { opacity:.4; cursor:default; }
+  .danger { margin:26px 0 0; padding:14px 16px; border:1px solid var(--danger-line); border-radius:16px; display:flex; align-items:center; gap:12px; }
+  .danger p { flex:1; margin:0; color:var(--muted); font-size:13px; }
+  .btn.del { border-color:var(--danger-btn); color:var(--bad); background:transparent; }
+  .ok { color:var(--good); } .warn { color:var(--warn); } .bad { color:var(--bad); }
+  body.single nav { display:none; } body.single .layout { max-width:820px; } body.single main { max-width:none; }
+  .share { margin:26px 0 0; padding:14px 16px; border:1px solid var(--line); border-radius:16px; display:flex; align-items:center; gap:12px; }
+  .share p { flex:1; margin:0; color:var(--muted); font-size:13px; }
+  @media (max-width: 800px) { nav { display:none; } .row2 { grid-template-columns:1fr; } }
+  @media (pointer: coarse) { input, textarea, select { font-size:16px !important; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <b id="uniName">New world</b>
+  <span><a href="/guide" style="margin-right:18px">? Guide</a><a href="/settings" style="margin-right:18px">⚙ Model Settings</a><a href="/start">← Back to stories</a></span>
+</div>
+<div class="layout">
+  <nav id="nav"></nav>
+  <main id="main"></main>
+</div>
+<div class="actions"><div class="inner">
+  <span class="status" id="status"></span>
+  <button class="btn" id="backBtn">Back</button>
+  <button class="btn" id="saveBtn">Save</button>
+  <button class="btn primary" id="nextBtn">Save &amp; Next</button>
+</div></div>
+
+<script src="/static/cards.js"></script>
+<script src="/static/crop.js"></script>
+<script>
+// ------------------------------------------------------------------ field definitions
+const FORMS = {
+  universe: [
+    {key:'name', type:'text', label:'World name'},
+    {key:'genre', type:'text', label:'Genre', placeholder:'e.g. high fantasy, urban fantasy, sci-fi', half:true},
+    {key:'tone', type:'text', label:'Tone', placeholder:'e.g. cozy, grim, comedic, political', half:true},
+    {key:'era', type:'text', label:'Era / technology', placeholder:'e.g. medieval, modern day, far future'},
+  ],
+  lore: [
+    {key:'title', type:'text', label:'Title', placeholder:'e.g. Harrowgate',
+     info:'The main name it is recognised by in the chat.'},
+    {key:'aliases', type:'text', label:'Other names', placeholder:'comma separated, e.g. the port city, the cliff town',
+     info:'The note is pulled into the chat when its title or any of these names is mentioned.'},
+    {key:'always', type:'check', label:'Always on', hint:'Sent with every message. Off: only when its name comes up.'},
+    {key:'text', type:'card', label:'Description', limit:2500, rows:12,
+     info:'Longer notes are condensed automatically before they go to the model.'},
+  ],
+  character: [
+    {type:'heading', label:'Who they are'},
+    {key:'name', type:'text', label:'Name', half:true},
+    {key:'age', type:'text', label:'Age', half:true, placeholder:'e.g. 34, or 300 (looks about 33)'},
+    {key:'summary', type:'text', label:'At a glance', placeholder:'e.g. Smuggler captain who owes money to half the harbour',
+     info:'One line that sums them up. Also shown in the drawer.'},
+    {key:'appearance', type:'card', label:'Appearance', limit:800, rows:5,
+     info:'How they look: build, face, hair, eyes, clothes, marks, the way they carry themselves. Keeps their description consistent, and other characters see it when they share a scene.'},
+    {key:'personality', type:'card', label:'Personality', limit:4500, rows:10,
+     placeholder:'e.g. Quick-witted and restless, with a laugh that fills a room. Charming to strangers, blunt with friends. Turns cold and precise when there\'s danger.',
+     info:'Their core temperament: how they come across, their quirks, how they act around people. The other parts below are optional; anything you put here works too. This text never changes on its own; what they learn in play is saved separately.'},
+    {key:'flaws', type:'card', label:'Flaws', limit:600, rows:4, optional:true,
+     placeholder:'e.g. Proud and stubborn. Holds grudges for years. Lies when cornered and hates admitting she\'s wrong.',
+     info:'Weaknesses, bad habits and fears. Flaws make characters feel real: they push back, make mistakes and don\'t agree with everything.'},
+    {type:'heading', label:'Inner life'},
+    {key:'motives', type:'card', label:'Motives and beliefs', limit:800, rows:4, optional:true,
+     placeholder:'e.g. Wants to buy back her family\'s ship. Believes a debt must always be paid. Will never sell out a crewmate, and owes loyalty to no one else.',
+     info:'What they want, what they believe, what they would never do, and who (if anyone) they are loyal to. Used when they make choices.'},
+    {key:'love', type:'card', label:'Love and relationships', limit:800, rows:5, optional:true,
+     placeholder:'e.g. Slow to trust and slower to fall for anyone. Hides affection behind teasing. Won over by honesty and loyalty, pushed away by pity. Once she commits: protective, tender, physically affectionate.',
+     info:'How they act when attracted to someone, how fast they open up, what wins them over and what pushes them away, how they are with a partner. The best place to set pacing: write "falls in love slowly" here and the model follows it.'},
+    {key:'backstory', type:'card', label:'Backstory', limit:1500, rows:6, optional:true,
+     placeholder:'e.g. Grew up on the docks of Harrowgate and ran her first cargo at fourteen. Lost her father\'s ship in a storm she still blames herself for.',
+     info:'Their history: where they come from and what shaped them. Kept apart from who they are now, so the model treats it as their past.'},
+    {type:'heading', label:'In the world'},
+    {key:'skills', type:'card', label:'Skills and abilities', limit:800, rows:4, optional:true,
+     placeholder:'e.g. Expert sailor and navigator, quick with a knife, reads people\'s tells. Can barely read, and is terrible with money.',
+     info:'What they are good at (and bad at): trades, fighting, magic or powers. Keep it in line with the world\'s rules.'},
+    {key:'daily', type:'card', label:'Daily life', limit:600, rows:3, optional:true,
+     placeholder:'e.g. Runs cargo along the coast, haggles at the night market, mends nets at the Lantern Inn in the evenings.',
+     info:'What they do on an ordinary day: work, hobbies, where they spend their time. Gives the model ideas for quiet scenes.'},
+    {key:'people', type:'card', label:'People in their life', limit:1000, rows:4, optional:true,
+     placeholder:'e.g. Bram: first mate, like a brother. Her mother Ysolde: estranged, lives inland. Tobin: harbour boss she owes money to.',
+     info:'Family, friends, rivals and what each means to them. If someone will appear in the story, also add them as an NPC in the world.'},
+    {key:'likes', type:'card', label:'Likes and dislikes', limit:600, rows:3, optional:true,
+     placeholder:'e.g. Likes: salted fish, storms, card games. Dislikes: liars, nobles, being told what to do.',
+     info:'Tastes, pleasures and pet peeves.'},
+    {key:'key_memories', type:'card', label:'Key Memories', limit:1000, rows:5,
+     info:'Short facts they must never forget: habits, possessions, languages, important dates. One per line.'},
+    {type:'heading', label:'Voice'},
+    {key:'directive', type:'card', label:'Response Directive', limit:250, rows:4,
+     info:'Their voice in a few words: attitude, humour, quirks, and reply length. Read right before every reply, so it has a strong effect. Keep it short.'},
+    {key:'example', type:'card', label:'Example Message', limit:750, rows:7,
+     info:'A sample reply showing how they write: narration in *asterisks*, dialogue, rhythm, length. Used as a style sample only, never as something that happened. Instructions like reply length go in the Response Directive. Write {user} for the player\'s name and {char} for theirs.'},
+    {type:'heading', label:'Their story'},
+    {key:'premise_name', type:'text', label:'Default premise name', placeholder:'Default',
+     info:'What this premise is called in the list when you start a new story.'},
+    {key:'story_premise', type:'card', label:'Default story premise', limit:1500, rows:7,
+     info:'Where and when this character\'s story begins: their situation, how they meet you, what\'s at stake. Used unless you pick another premise when starting a story. Write {user} for the player\'s name.'},
+    {key:'greeting', type:'card', label:'Default greeting', limit:1000, rows:5,
+     info:'The first message of a brand new story. It usually opens the scene from the story premise. Use *asterisks* for narration, and {user} for the player\'s name.'},
+    {type:'heading', label:'Content'},
+    {key:'sfw_only', type:'check', label:'Never mature content', hint:'Stories with them stay non-explicit, even when Mature content is on in Model Settings.'},
+  ],
+  premise: [
+    {key:'name', type:'text', label:'Premise name', placeholder:'e.g. Bounty target, Old friends, Stranded together'},
+    {key:'premise', type:'card', label:'Story premise', limit:1500, rows:6,
+     info:'Where and when the story begins, how you meet, what\'s at stake. Write {user} for the player\'s name.'},
+    {key:'greeting', type:'card', label:'Greeting', limit:1000, rows:4,
+     info:'The first message when a story starts with this premise. Use *asterisks* for narration, and {user} for the player\'s name.'},
+  ],
+  npc: [
+    {key:'name', type:'text', label:'Name', half:true},
+    {key:'color', type:'color', label:'Bubble colour', half:true},
+    {key:'aliases', type:'text', label:'Nicknames', placeholder:'comma separated',
+     info:'They are recognised in the chat by their name or any of these.'},
+    {key:'summary', type:'card', label:'One-line summary', limit:300, rows:2,
+     info:'What other characters know about them at a glance, e.g. "Gruff innkeeper of the Lantern Inn, owes the Saltborn money." Sent to the main character whenever this NPC is mentioned, so keep it short; details go in Personality.'},
+    {key:'personality', type:'card', label:'Personality', limit:4500, rows:12,
+     info:'Only this NPC sees this, when they speak: backstory, age, personality, how they talk, what they know.'},
+    {key:'flaws', type:'card', label:'Flaws', limit:400, rows:3, optional:true, placeholder:'e.g. Greedy and nosy; can\'t keep a secret.',
+     info:'Weaknesses, bad habits and fears.'},
+    {key:'motives', type:'card', label:'Motives and beliefs', limit:500, rows:3, optional:true, placeholder:'e.g. Wants to keep the inn afloat; trusts no one from the capital.',
+     info:'What they want and believe, and who they are loyal to.'},
+    {key:'love', type:'card', label:'Love and relationships', limit:500, rows:3, optional:true, placeholder:'e.g. Widowed; flirts with everyone and means it with no one.',
+     info:'How they act when attracted to someone, and how fast they open up.'},
+    {key:'appearance', type:'card', label:'Appearance', limit:800, rows:4,
+     info:'How they look. They know their own look, and the main character sees it when they are in a scene together.'},
+    {type:'heading', label:'How they speak'},
+    {key:'directive', type:'card', label:'Response Directive', limit:250, rows:3,
+     info:'Their voice in a few words. Read right before each of their replies.'},
+    {key:'example', type:'card', label:'Example Message', limit:750, rows:5,
+     info:'A short sample of how they write. Style only, never treated as something that happened. {user} = the player\'s name.'},
+  ],
+  user: [
+    {key:'name', type:'text', label:'Name'},
+    {key:'appearance', type:'card', label:'Appearance', limit:800, rows:5,
+     info:'How you look: build, face, hair, eyes, clothes, anything people would notice. Characters and NPCs see this.'},
+    {key:'public', type:'card', label:'Public', limit:1000, rows:7,
+     info:'What anyone in the story would know about you: how you come across, your role, your reputation. Characters and NPCs get this.'},
+    {key:'private', type:'card', label:'Private', limit:2000, rows:7,
+     info:'Your background and secrets. Not sent to the model; characters learn about you by playing.'},
+  ],
+};
+const FOUNDATION_INFO = {
+  magic: 'How this world works and what can never happen: magic or powers (who can use them, what they cost, their limits), technology, and hard rules the story must never break.',
+  peoples: 'Races, species, kinds of people, and how they get along.',
+  politics: 'Who holds power, factions, tensions, current events everyone knows about.',
+  setting: 'Older card, now part of World overview.',
+  laws: 'Older card, now part of World rules.',
+};
+// Greyed-out examples shown in empty fields. An invented world, so it's clearly just an example.
+const STYLE_EXAMPLE = `e.g. Third person, past tense. Actions and descriptions in *asterisks*, speech in "quotes". Keep replies to 1–3 paragraphs and never speak or act for {user}.`;
+const OVERVIEW_EXAMPLE = `e.g. The Shattered Isles are a chain of storm-wrapped islands, cut off from the mainland since the Sundering 300 years ago. Island lords trade, feud and raid each other, while the old sky-temples stand empty.
+
+Regions:
+Vael: the largest isle, ruled from the port city of Harrowgate. Cold, rainy, crowded.
+The Reach: lawless outer isles, home to smugglers and exiles.
+
+Stories here are about survival, shifting loyalties and the secrets the temples left behind.`;
+const FOUNDATION_EXAMPLE = {
+  magic: `e.g.
+- Magic comes from storm-glass. Casting drains the caster's body heat; overuse can kill.
+- About one in a hundred people can cast, and it shows by age 12.
+- Nobody can raise the dead or travel through time.
+- No firearms; crossbows are the strongest ranged weapons.
+- Casting without a guild licence is punished by exile.`,
+  peoples: `e.g.
+- Humans: most of the population, on every isle.
+- Selkin: seal-folk who can shed their skins. Distrusted on land.
+- Stonekin: slow-spoken, long-lived miners from the Reach. Rarely leave home.`,
+  politics: `e.g.
+- The Council of Lords rules Vael, but Lord Maren holds the real power.
+- The Reach refuses to pay tribute; a blockade began last spring.
+- Rumour says one of the sky-temples has started glowing again.`,
+};
+const LORE_EXAMPLE = {
+  places: `e.g. Harrowgate is a crowded port city built on cliffs above the harbour. The upper town belongs to merchant families; the lower docks are run by the Saltborn gang. Travellers trade news at the Lantern Inn. The city gates close at midnight.`,
+  maps: `e.g. Vael sits at the centre of the Isles. Harrowgate is on its west coast; the Reach is two days' sail east. The Grey Strait between them is dangerous in winter. The sky-temples are on the ridge north of Harrowgate, a day's walk.`,
+  factions: `e.g. The Storm Guild licenses and trains every mage. Led by Archmagister Ilse Varn from the Glass Tower in Harrowgate. Members wear grey cloaks with a silver clasp. Common folk distrust them; they are at odds with the Saltborn gang.`,
+  history: `e.g. The Sundering, 300 years ago: the temple priests tried to bind the storms, and the land broke into islands. Nobody has entered the temples since. Every year on the anniversary, islanders light lanterns for the lost.`,
+  magic: `e.g. Storm-glass forms where lightning strikes sand. Raw glass hums; a trained mage can draw one spell from a shard before it cracks. Large pieces are rare, valuable and heavily guarded.`,
+  peoples: `e.g. Selkin are seal-folk who live along the coasts. On land they look human apart from their wide, dark eyes. If they lose their sealskin they are trapped on land. Many sailors think killing one brings bad luck.`,
+  politics: `e.g. The blockade of the Reach: since last spring, Council ships stop all trade to the outer isles. Smuggling has boomed, food is scarce in the Reach, and both sides are looking for allies.`,
+  objects: `e.g. The Tidekey is a bronze key said to open any sky-temple door. It was lost in the Sundering. Several fakes are around; the real one is cold to the touch even in summer.`,
+  other: `e.g. What the characters should know when this comes up: who or what it is, where, and why it matters.`,
+};
+const STEPS = [
+  {id:'basics', title:'The basics', group:'World'},
+  {id:'foundations', title:'World foundations', group:'World'},
+  {id:'lore', title:'Places & Lore', group:'World'},
+  {id:'characters', title:'Characters', group:'People'},
+  {id:'npcs', title:'NPCs', group:'People'},
+  {id:'users', title:'Players', group:'People'},
+];
+
+// ------------------------------------------------------------------ state
+const params = new URLSearchParams(location.search);
+let uid = params.get('u');
+let step = params.get('step') === 'review' ? STEPS.length - 1      // old links to the removed Review step
+         : Math.max(0, STEPS.findIndex(s => s.id === params.get('step')));
+let overview = null;
+let forms = [];            // doc forms on the current page
+// Single-item mode (/edit?u=…&item=character&id=…&back=…): one character or player, without the wizard.
+let closing = false;      // set while "Save & Close" is saving
+const single = ['character', 'user'].includes(params.get('item')) && params.get('u') ? params.get('item') : null;
+const backTo = (() => { const b = params.get('back') || ''; return b.startsWith('/') && !b.startsWith('//') ? b : `/start?u=${encodeURIComponent(params.get('u') || '')}`; })();
+let pageToken = 0;         // changes on every page render, so late redraws of an old page are ignored
+const main = document.getElementById('main'), statusEl = document.getElementById('status');
+
+const api = async (url, opts) => {
+  const r = await fetch(url, opts && {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(opts)});
+  return {status: r.status, ...(await r.json())};
+};
+const el = (tag, attrs = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') e.className = v; else if (k.startsWith('on')) e[k] = v; else if (v !== undefined) e.setAttribute(k, v);
+  }
+  kids.flat().forEach(k => e.append(k));
+  return e;
+};
+const say = (t, cls = '') => { statusEl.className = 'status ' + cls; statusEl.textContent = t; };
+const dirty = () => forms.some(f => f.dirty());
+
+// ------------------------------------------------------------------ one input card
+function makeInput(def, value, onChange) {
+  if (def.type === 'check') {
+    const box = el('input', {type:'checkbox'}); box.checked = !!value; box.onchange = onChange;
+    const label = el('label', {class:'check'}, box, def.label);
+    if (def.hint) label.append(el('small', {}, def.hint));
+    return {el: el('div', {class:'card'}, label), get: () => box.checked};
+  }
+  const head = el('div', {class:'card-head'});
+  if (def.info) head.append(el('span', {class:'info', title:def.info}, 'i'));
+  head.append(el('span', {class:'grow'}, def.label));
+  let input;
+  if (def.type === 'card') {
+    input = el('textarea', {rows: def.rows || 6, spellcheck:'true'});
+    if (def.placeholder) input.placeholder = def.placeholder;
+    input.value = value || '';
+    const count = el('span', {class:'count'});
+    const upd = () => {
+      count.textContent = `${input.value.length}/${def.limit}`;
+      const over = input.value.length > def.limit;
+      count.classList.toggle('over', over);
+      count.title = over ? 'Over the suggested length. That\'s allowed: it just leaves less room for the conversation (see the memory bar at the top).' : '';
+    };
+    input.addEventListener('input', upd); upd();
+    const exp = el('button', {class:'expand', title:'Expand', type:'button'}, '⤢');
+    exp.onclick = () => { input.rows = input.rows > (def.rows || 6) ? (def.rows || 6) : (def.rows || 6) * 2 + 6; };
+    head.append(count, exp);
+    if (def.optional) {
+      const add = el('span', {class:'opt-add'}, '+ Add');
+      head.prepend(add);
+      const card = () => input.closest('.card');
+      const open = (focus) => { const c = card(); if (!c || !c.classList.contains('collapsed')) return; c.classList.remove('collapsed'); if (focus) input.focus(); };
+      head.addEventListener('click', e => { if (!e.target.closest('.info, .expand')) open(true); });
+      input.openCard = () => open(false);
+      input.startCollapsed = !value;
+    }
+  } else if (def.type === 'color') {
+    input = el('input', {type:'color'}); input.value = value || '#2f9e44';
+  } else if (def.type === 'select') {
+    input = el('select'); def.options.forEach(o => input.append(el('option', {value:o}, o)));
+    input.value = value || def.options[0];
+  } else {
+    input = el('input', {type:'text', placeholder: def.placeholder || ''}); input.value = value || '';
+  }
+  input.addEventListener('input', onChange);
+  input.addEventListener('change', onChange);
+  const card = el('div', {class:'card' + (input.startCollapsed ? ' collapsed' : '') + (def.optional ? ' optional' : '')}, head, input);
+  const set = v => { input.value = v; input.dispatchEvent(new Event('input')); if (v && input.openCard) input.openCard(); };
+  return {el: card, get: () => input.value, set, input};
+}
+
+// ------------------------------------------------------------------ a form bound to one file
+function docForm({kind, id, defs, fields = {}, mtime = null, extra = null}) {
+  const f = {kind, id, mtime, extra, inputs:{}, changed:false};
+  f.el = el('div');
+  let half = null;
+  for (const def of defs) {
+    if (def.type === 'heading') { half = null; f.el.append(el('div', {class:'section-title'}, def.label)); continue; }
+    const inp = makeInput(def, fields[def.key], () => { f.changed = true; say('Unsaved changes'); if (f.onChange) f.onChange(); });
+    f.inputs[def.key] = inp;
+    if (def.half) {
+      if (!half) { half = el('div', {class:'row2'}); f.el.append(half); }
+      half.append(inp.el); if (half.children.length === 2) half = null;
+    } else { half = null; f.el.append(inp.el); }
+  }
+  f.values = () => Object.fromEntries(Object.entries(f.inputs).map(([k, i]) => [k, i.get()]));
+  f.dirty = () => f.changed;
+  f.save = async (force = false) => {
+    if (!f.changed && f.id) return true;
+    const body = {u: uid, kind: f.kind, id: f.id, fields: f.values(), mtime: f.mtime, force, ...(f.extra ? f.extra() : {})};
+    const r = await api('/api/doc', body);
+    if (r.conflict) {
+      if (confirm(r.error + '\n\nOverwrite it with what is in the editor? (A backup of the other version is kept.)')) return f.save(true);
+      say('Not saved', 'bad'); return false;
+    }
+    if (r.error) { say(r.error, 'bad'); return false; }
+    f.id = r.id; f.mtime = r.mtime; f.changed = false;
+    if (overview && r.always_used !== undefined) overview.always_used = r.always_used;
+    return true;
+  };
+  return f;
+}
+
+async function loadDoc(kind, id) {
+  return id ? api(`/api/doc?u=${encodeURIComponent(uid)}&kind=${kind}&id=${encodeURIComponent(id)}`) : {fields:{}, mtime:null};
+}
+async function refreshOverview() {
+  if (!uid) return;
+  overview = await api(`/api/universe/${encodeURIComponent(uid)}`);
+  document.getElementById('uniName').textContent = overview.info.name;
+  if (single) { const a = document.querySelector('.top a[href="/start"]'); if (a) { a.href = backTo; a.textContent = '← Back'; } }
+  document.title = overview.info.name + ' · editor';
+}
+
+// ------------------------------------------------------------------ single-item mode
+async function singlePage() {
+  const id = params.get('id') || '';
+  const what = single === 'user' ? 'player' : 'character';
+  const it = (single === 'user' ? overview.users : overview.characters).find(x => x.id === id);
+  if (id && !it) { header('Not found', `This ${what} doesn't exist (any more).`); return; }
+  header(it ? it.name : `New ${what}`, single === 'user'
+    ? `Who you play as in ${overview.info.name}. Characters here can only meet players from this world.`
+    : `A character in ${overview.info.name}. Their personality stays as you write it; what they learn about you is saved per story.`);
+  await itemPage({kind: single, getItems: () => [], startId: id || null, after: single === 'character' ? premisesSection : undefined});
+}
+
+// ------------------------------------------------------------------ navigation
+function renderNav() {
+  if (single) {
+    document.body.classList.add('single');
+    document.getElementById('backBtn').disabled = false;
+    document.getElementById('nextBtn').textContent = 'Save & Close';
+    return;
+  }
+  const nav = document.getElementById('nav'); nav.innerHTML = '';
+  STEPS.forEach((s, i) => {
+    if (i === 0 || STEPS[i - 1].group !== s.group) nav.append(el('div', {class:'ngroup'}, s.group));   // World / People
+    nav.append(el('button', {
+      class: i === step ? 'on' : '', disabled: (!uid && i > 0) ? '' : undefined,
+      onclick: () => go(i)}, el('span', {class:'n'}, String(i + 1)), s.title));
+  });
+  document.getElementById('backBtn').disabled = step === 0;
+  document.getElementById('nextBtn').textContent = step === STEPS.length - 1 ? 'Save & Finish' : (uid ? 'Save & Next' : 'Create world');
+}
+async function go(i) {
+  if (dirty() && !confirm('You have unsaved changes on this page. Leave without saving?')) return;
+  step = i; history.replaceState(null, '', `/edit?${uid ? 'u=' + encodeURIComponent(uid) + '&' : ''}step=${STEPS[i].id}`);
+  await render();
+}
+async function saveAll() {
+  for (const f of forms) if (!(await f.save())) return false;
+  say('Saved ✓', 'ok'); return true;
+}
+document.getElementById('saveBtn').onclick = saveAll;
+const leave = () => { if (dirty() && !confirm('You have unsaved changes. Leave without saving?')) return; forms.forEach(x => x.changed = false); location.href = backTo; };
+document.getElementById('backBtn').onclick = () => single ? leave() : go(step - 1);
+document.getElementById('nextBtn').onclick = async () => {
+  if (single) { closing = true; if (await saveAll()) { forms.forEach(x => x.changed = false); location.href = backTo; } else closing = false; return; }
+  if (!uid) return createUniverse();
+  if (!(await saveAll())) return;
+  if (step === STEPS.length - 1) { forms.forEach(x => x.changed = false); location.href = `/start?u=${encodeURIComponent(uid)}`; return; }
+  forms = []; await go(step + 1);
+};
+
+async function createUniverse() {
+  const f = forms[0], vals = f.values();
+  if (!vals.name.trim()) { say('Give your world a name first.', 'bad'); return; }
+  const r = await api('/api/universes', {name: vals.name});
+  if (r.error) { say(r.error, 'bad'); return; }
+  uid = r.id; f.id = 'universe'; f.changed = true;
+  await f.save(); forms = [];
+  await refreshOverview();
+  await go(1);
+}
+
+// ------------------------------------------------------------------ pages
+async function render(keepStatus) {
+  if (!keepStatus) say('');
+  renderNav();
+  main.innerHTML = ''; forms = []; pageToken++;
+  if (single) { await singlePage(); return; }
+  const s = STEPS[step].id;
+  await PAGES[s]();
+  window.scrollTo(0, 0);
+}
+
+async function deleteItem(kind, id, name, extraWarning) {
+  const msg = `Delete ${name}?${extraWarning ? '\n\n' + extraWarning : ''}\n\nIt's moved to the trash folder (worlds\\.trash), so you can still get it back by moving it out again.`;
+  if (!confirm(msg)) return false;
+  const r = await api('/api/delete', {u: uid, kind, id});
+  if (r.error) { say(r.error, 'bad'); return false; }
+  say(`${name} moved to the trash.`, 'ok');
+  return true;
+}
+function dangerZone(text, label, onclick) {
+  const b = el('button', {class:'btn del', type:'button', onclick}, label);
+  return el('div', {class:'danger'}, el('p', {}, text), b);
+}
+
+function header(title, lead) { main.append(el('h1', {}, title), el('p', {class:'lead'}, lead)); }
+
+const PAGES = {
+  async basics() {
+    header(uid ? 'The basics' : 'Create a new world',
+      'Name your world and set its feel. You\'ll describe the world itself in the next step.');
+    const d = await loadDoc('universe', uid ? 'universe' : null);
+    const f = docForm({kind:'universe', id: uid ? 'universe' : null, defs: FORMS.universe, fields: d.fields, mtime: d.mtime});
+    forms.push(f); main.append(f.el);
+    if (uid) main.append(backgroundCard('world', null));
+    if (uid) main.append(dangerZone('Delete this whole world: its foundations, Places & Lore, characters, NPCs, players and every story in it.',
+      'Delete world', async () => {
+        const name = overview.info.name;
+        const typed = prompt(`This deletes ${name} with everything in it.\n\nType the world's name to confirm:`);
+        if (typed === null) return;
+        if (typed.trim().toLowerCase() !== name.trim().toLowerCase()) { say('Name didn\'t match. Nothing was deleted.', 'bad'); return; }
+        const r = await api('/api/delete', {u: uid, kind:'universe'});
+        if (r.error) { say(r.error, 'bad'); return; }
+        forms = []; location.href = '/start';
+      }));
+  },
+
+  async foundations() {
+    header('World foundations', 'What every character in this world always knows: an overview and the rules that always apply. Leave any card you don\'t need empty.');
+    main.append(el('div', {class:'explain'}, el('b', {}, 'How your world reaches the characters'), el('ul', {},
+      el('li', {}, el('b', {}, 'Always on (this page): '), 'sent with every message, so characters never forget it. Keep it to the essentials; it shares the space shown below.'),
+      el('li', {}, el('b', {}, 'On mention (Places & Lore, next step): '), 'an entry is only added when its name comes up in the chat. Put the details there; it can be as long as you like.'))));
+    const meter = el('div', {class:'meter'}); const bar = el('div', {class:'bar'}, el('div'));
+    meter.append(el('span'), bar); main.append(meter);
+    const saved = {};
+    const ov = await loadDoc('universe', 'universe');
+    const overviewForm = docForm({kind:'universe', id:'universe', mtime: ov.mtime, fields: {premise: ov.fields.premise || '', style: ov.fields.style || ''},
+      defs: [
+             {key:'style', type:'card', label:'Writing format', limit:400, rows:4, placeholder: STYLE_EXAMPLE,
+              info:'How every character and NPC in this world writes their replies: point of view, tense, how actions are shown, reply length. Read right before every reply. Each character\'s own voice and personality go in their Response Directive, which comes after this.'},
+             {key:'premise', type:'card', label:'World overview', limit:2000, rows:8, placeholder: OVERVIEW_EXAMPLE,
+              info:'The world in a nutshell, shared by every character: what this place is, its regions, how it looks and feels, what\'s going on, what kinds of stories happen here. Individual characters\' situations go in their own story premise.'}]});
+    const overviewLen = () => overviewForm.values().premise.trim().length;
+    const updMeter = () => {
+      const others = overview.always_used - Object.values(saved).reduce((a, b) => a + b, 0);
+      const used = others + forms.filter(f => f.kind === 'foundation').reduce((a, f) => a + f.values().text.trim().length, 0) + overviewLen();
+      const pct = Math.min(100, used / overview.always_max * 100);
+      meter.firstChild.textContent = `Always-on world space: ${used.toLocaleString()} / ${overview.always_max.toLocaleString()} characters` +
+        (used > overview.always_max ? '. Over the limit; the end gets cut off.' : '');
+      bar.firstChild.style.width = pct + '%';
+      bar.firstChild.style.background = used > overview.always_max ? 'var(--bad)' : pct > 85 ? 'var(--warn)' : 'var(--good)';
+    };
+    overviewForm.onChange = updMeter;
+    forms.push(overviewForm); main.append(overviewForm.el);
+    const olds = overview.old_foundations || [];
+    for (const fd of [...overview.foundations, ...olds]) {
+      if (fd === olds[0]) {
+        main.append(el('div', {class:'section-title'}, 'Older cards'));
+        main.append(el('p', {class:'empty'}, 'These were merged into World overview and World rules. Their text is still used. When you have a moment, move it into the card above it belongs to and empty this one; an empty older card disappears.'));
+      }
+      const d = await loadDoc('foundation', fd.id);
+      saved[fd.id] = (d.fields.text || '').trim().length;
+      const f = docForm({kind:'foundation', id: fd.id, mtime: d.mtime, fields: d.fields,
+        defs: [{key:'text', type:'card', label: fd.title, limit: 1200, rows: 6, info: FOUNDATION_INFO[fd.id], placeholder: FOUNDATION_EXAMPLE[fd.id]}]});
+      f.onChange = updMeter;
+      const orig = f.save;
+      f.save = async (force) => { const ok = await orig(force); if (ok) saved[fd.id] = f.values().text.trim().length; return ok; };
+      forms.push(f); main.append(f.el);
+    }
+    const styleCard = overviewForm.inputs.style.el;
+    main.append(el('div', {class:'section-title'}, 'How replies are written'), styleCard,
+      el('p', {class:'empty', style:'margin-top:-6px'}, 'Optional. Only for rules that are the same for every character here. Not counted in the world space above.'));
+    updMeter();
+  },
+
+  async lore() {
+    header('Places & Lore', 'Places, factions, history, objects. An entry is only added to the chat when its name comes up, so add as many as you like. For maps, describe regions and distances in words.');
+    let current = null;
+    const example = cat => { if (current) current.inputs.text.input.placeholder = LORE_EXAMPLE[cat] || LORE_EXAMPLE.other; };
+    await itemPage({kind:'lore', getItems: () => overview.lore.map(l => ({id:l.id, label:l.title, sub:l.category, pin:l.always})),
+      newLabel:'+ New entry', empty:'No entries yet.',
+      newExtra: () => {
+        const cat = makeInput({type:'select', label:'Category', options: overview.categories,
+          info:'Which folder in lore/ it is saved in. Only for your own organising.'}, 'places', () => example(cat.get()));
+        return {el: cat.el, extra: () => ({category: cat.get()})};
+      },
+      onForm: (f, id) => { current = f; example(id ? ((overview.lore.find(l => l.id === id) || {}).category || 'other') : 'places'); }});
+  },
+
+  async characters() {
+    header('Characters', 'The characters you roleplay with. Their personality stays as you write it; what they learn about you is saved per story.');
+    await itemPage({kind:'character', getItems: () => overview.characters.map(c => ({id:c.id, label:c.name})),
+      newLabel:'+ New character', empty:'No characters yet. Add at least one.',
+      after: premisesSection});
+  },
+
+  async npcs() {
+    header('NPCs', 'Side characters of this world: they join a scene when they\'re mentioned, but you don\'t chat with them directly like the main characters. Shared by every character and story here; optional, and you can add more any time.');
+    await itemPage({kind:'npc', getItems: () => overview.npcs.map(n => ({id:n.id, label:n.name})),
+      newLabel:'+ New NPC', empty:'No NPCs yet.'});
+  },
+
+  async users() {
+    header('Players', 'Who you play as in this world. Each world has its own; these can only meet characters from here. When you\'re done, Save & Finish takes you to the start screen to begin a story.');
+    await itemPage({kind:'user', getItems: () => overview.users.map(u => ({id:u.id, label:u.name})),
+      newLabel:'+ New player character', empty:'Nobody yet. Add who you\'ll play as.'});
+  },
+};
+
+// portrait picture for a character / NPC / player
+// A chat background: per character, or a default for the whole world.
+function backgroundCard(kind, id) {
+  const item = kind === 'character' ? overview.characters.find(x => x.id === id) : null;
+  let url = kind === 'world' ? overview.background : item && item.background;
+  const card = el('div', {class:'card bgcard'});
+  const pic = el('div', {class:'bgpic'});
+  const show = () => { pic.style.backgroundImage = url ? `url("${url}")` : ''; pic.classList.toggle('empty', !url); pic.textContent = url ? '' : 'No background'; };
+  const hint = kind === 'world'
+    ? 'Shown behind the chat for every character in this world who has no background of their own.'
+    : 'Shown behind the chat with them. Without one, the world\'s background is used (if it has one).';
+  const text = el('div', {class:'ptext'}, el('div', {}, kind === 'world' ? 'Chat background' : 'Chat background'),
+    el('div', {class:'phint'}, (id || kind === 'world') ? hint + ' Wide pictures work best (e.g. 1920 × 1080). PNG, JPG, WEBP or GIF, up to 15 MB.' : 'Save first, then you can add a background.'));
+  const file = el('input', {type:'file', accept:'image/png,image/jpeg,image/webp,image/gif', style:'display:none'});
+  const up = el('button', {class:'btn', type:'button', onclick: () => file.click()}, url ? 'Change' : 'Upload');
+  const rm = el('button', {class:'btn', type:'button'}, 'Remove');
+  const send = async fd => {
+    fd.append('u', uid); fd.append('kind', kind); if (id) fd.append('id', id);
+    say(fd.has('remove') ? 'Removing…' : 'Uploading…');
+    const r = await (await fetch('/api/background', {method:'POST', body: fd})).json();
+    if (r.error) { say(r.error, 'bad'); return; }
+    url = r.background; if (item) item.background = url; if (kind === 'world') overview.background = url;
+    show(); up.textContent = url ? 'Change' : 'Upload'; rm.style.display = url ? '' : 'none';
+    say(url ? 'Background saved ✓' : 'Background removed.', 'ok');
+  };
+  file.onchange = () => { const f = file.files[0]; file.value = ''; if (!f) return; const fd = new FormData(); fd.append('file', f, f.name); send(fd); };
+  rm.onclick = () => { const fd = new FormData(); fd.append('remove', '1'); send(fd); };
+  if (!url) rm.style.display = 'none';
+  if (!id && kind !== 'world') up.disabled = true;
+  show();
+  card.append(el('div', {class:'bgrow'}, text, el('div', {class:'pbtns'}, up, rm)), pic, file);
+  return card;
+}
+
+function portraitCard(kind, id) {
+  const list = {character: overview.characters, npc: overview.npcs, user: overview.users}[kind];
+  const item = id ? list.find(x => x.id === id) : null;
+  const card = el('div', {class:'card portrait'});
+  const pic = el('div', {class:'pic'});
+  const show = src => { pic.innerHTML = ''; if (src) { const i = el('img', {src, alt:''}); pic.append(i); } else pic.append((item ? item.name : '?').trim()[0].toUpperCase()); };
+  show(item && item.avatar);
+  const text = el('div', {class:'ptext'}, el('div', {}, 'Portrait'),
+    el('div', {class:'phint'}, id ? 'Shown next to their messages and on the start screen. PNG, JPG, WEBP or GIF.' : 'Save first, then you can add a picture.'));
+  const file = el('input', {type:'file', accept:'image/png,image/jpeg,image/webp,image/gif', style:'display:none'});
+  const up = el('button', {class:'btn', type:'button', onclick: () => file.click()}, item && item.avatar ? 'Change' : 'Upload');
+  const rm = el('button', {class:'btn', type:'button'}, 'Remove');
+  const adj = el('button', {class:'btn', type:'button', title:'Move or zoom the picture inside the circle'}, 'Adjust');
+  const sendPic = async (fd) => {
+    fd.append('u', uid); fd.append('kind', kind); fd.append('id', id);
+    const r = await (await fetch('/api/avatar', {method:'POST', body: fd})).json();
+    if (r.error) { say(r.error, 'bad'); return; }
+    show(r.avatar); if (item) item.avatar = r.avatar; up.textContent = r.avatar ? 'Change' : 'Upload';
+    rm.style.display = adj.style.display = r.avatar ? '' : 'none';
+    say(r.avatar ? 'Portrait saved ✓' : 'Portrait removed.', 'ok');
+  };
+  // a new picture: position it first, then save the cropped circle plus the full picture (for Adjust later)
+  file.onchange = async () => {
+    const f = file.files[0]; file.value = ''; if (!f) return;
+    const cropped = await cropImage(f); if (!cropped) return;
+    const fd = new FormData();
+    fd.append('file', cropped, cropped.type === 'image/webp' ? 'portrait.webp' : 'portrait.png');
+    fd.append('original', f, f.name);
+    sendPic(fd);
+  };
+  // re-position the current portrait, starting from the full picture if it was kept
+  adj.onclick = async () => {
+    let src = null;
+    try {
+      const r = await fetch(`/avatar/${encodeURIComponent(uid)}/${kind}/${encodeURIComponent(id)}?original=1&t=${Date.now()}`);
+      if (r.ok) src = await r.blob();
+    } catch (e) {}
+    if (!src && item && item.avatar) { try { src = await (await fetch(item.avatar)).blob(); } catch (e) {} }
+    if (!src) { say('Could not open the current portrait.', 'bad'); return; }
+    const cropped = await cropImage(src); if (!cropped) return;
+    const fd = new FormData();
+    fd.append('file', cropped, cropped.type === 'image/webp' ? 'portrait.webp' : 'portrait.png');
+    sendPic(fd);
+  };
+  rm.onclick = () => { const fd = new FormData(); fd.append('remove', '1'); sendPic(fd); };
+  if (!(item && item.avatar)) rm.style.display = adj.style.display = 'none';
+  if (!id) { up.disabled = true; }
+  card.append(pic, text, adj, up, rm, file);
+  return card;
+}
+
+async function premisesSection(cid, box) {
+  box.append(el('div', {class:'section-title'}, 'More story premises'));
+  if (!cid) { box.append(el('p', {class:'empty'}, 'Save the character first, then add other ways their story can begin.')); return; }
+  box.append(el('p', {class:'empty'}, 'Other ways a story with them can begin, e.g. one where you\'re their bounty target and one where you\'re old friends. ' +
+    'You pick one each time you start a new story. Editing a premise changes it for every story that uses it.'));
+  const info = await api(`/api/premises?u=${encodeURIComponent(uid)}&c=${encodeURIComponent(cid)}`);
+  const used = Object.fromEntries((info.premises || []).map(p => [p.id, p.used_by]));
+  const list = el('div'); box.append(list);
+  const usedLine = names => names && names.length ? `In use by: ${names.join(', ')}` : 'Not used by any story yet';
+  const addCard = (pid, d, open) => {
+    const f = docForm({kind:'premise', id: pid ? `${cid}/${pid}` : `${cid}/`, defs: FORMS.premise, fields: d.fields || {}, mtime: d.mtime || null});
+    const title = () => (f.values().name.trim() || 'New premise');
+    const summary = el('summary', {style:'cursor:pointer;padding:2px 6px;'}, title());
+    const sub = el('p', {class:'empty', style:'padding:4px 6px 0'}, pid ? usedLine(used[pid]) : 'Give it a name, then Save.');
+    const del = el('button', {class:'btn del', type:'button'}, pid ? 'Delete premise' : 'Remove');
+    const wrap = el('details', {class:'card'}, summary, sub, f.el, el('div', {style:'display:flex;justify-content:flex-end;margin-top:6px'}, del));
+    f.onChange = () => { summary.textContent = title(); };
+    const orig = f.save;
+    f.save = async (force) => {
+      const isNew = f.id.endsWith('/');
+      if (isNew && !f.changed) return true;
+      const ok = await orig(force);
+      if (ok && isNew) sub.textContent = usedLine([]);
+      return ok;
+    };
+    del.onclick = async () => {
+      if (f.id.endsWith('/')) { forms = forms.filter(x => x !== f); wrap.remove(); return; }
+      const users = used[f.id.split('/')[1]] || [];
+      const warn = users.length ? `\n\nStories using it (${users.join(', ')}) will switch to the default premise.` : '';
+      if (!confirm(`Delete the premise "${title()}"? It goes to the trash folder.${warn}`)) return;
+      const r = await api('/api/delete', {u: uid, kind:'premise', id: f.id});
+      if (r.error) { say(r.error, 'bad'); return; }
+      forms = forms.filter(x => x !== f); wrap.remove(); say('Premise deleted', 'ok');
+    };
+    wrap.open = !!open;
+    forms.push(f); list.append(wrap);
+  };
+  for (const p of (info.premises || []).filter(p => p.id !== 'default')) addCard(p.id, await loadDoc('premise', `${cid}/${p.id}`), false);
+  box.append(el('button', {class:'chip add', type:'button', style:'margin:4px 0 8px', onclick: () => addCard(null, {}, true)}, '+ Add a premise'));
+}
+
+// ------------------------------------------------------------------ "Sort into sections"
+// Finds labelled parts in a one-box character ("Backstory: …", "Relations: …") and suggests
+// which new section each belongs in. Nothing is saved until you press Save.
+const SORT_LABELS = [
+  [/^(personality|traits|temperament|character|personality traits)$/, 'personality'],
+  [/^(negative traits|flaws?|weakness(es)?|faults?|fears?|flaws and fears|vices)$/, 'flaws'],
+  [/^(motives?|motivations?|beliefs?|motives? ?(and|&|\/) ?beliefs?|goals?|values|morals|ideals)$/, 'motives'],
+  [/^(relations|relationships?|romance|love|in love|love life|romantic|love and relationships|love language)$/, 'love'],
+  [/^(backstory|background|history|past|bio|biography|origin)$/, 'backstory'],
+  [/^(skills?|abilit(y|ies)|powers?|talents?|skills? ?(and|&|\/) ?abilit(y|ies)|magic|combat)$/, 'skills'],
+  [/^(day ?to ?day|daily|daily life|routine|occupation|job|work)$/, 'daily'],
+  [/^(family|friends|best friends?|people|allies|enemies|rivals|people in (his|her|their) life)$/, 'people'],
+  [/^(likes|dislikes|hobbies|likes ?(and|&|\/) ?dislikes|interests)$/, 'likes'],
+  [/^(appearance|looks)$/, 'appearance'],
+  [/^age$/, 'age'],
+  [/^name$/, 'name'],
+];
+const KEEP_LABEL = new Set(['people', 'likes']);     // several labels share these, so keep "Family:", "Likes:"
+const sortTarget = label => { const n = label.toLowerCase().replace(/[^a-z&\/ ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const hit = SORT_LABELS.find(([re]) => re.test(n)); return hit ? hit[1] : null; };
+const LABEL_RE = /^\s*(?:[-*•]\s*)?(?:\*\*|__|#{1,3}\s*)?([A-Za-z][A-Za-z '&\/-]{1,32}?)(?:\*\*|__)?\s*:\s*(?:\*\*|__)?\s*(.*)$/;
+
+function sortProposal(v) {
+  const moves = [];                         // {target, label, text, from}
+  // Personality: blocks that start with a known label run until the next known label.
+  const keep = []; let cur = null;
+  for (const line of (v.personality || '').split('\n')) {
+    const m = line.match(LABEL_RE); const t = m && sortTarget(m[1]);
+    if (t) { cur = {target: t, label: m[1].trim(), lines: m[2] ? [m[2]] : [], from: 'personality'}; moves.push(cur); continue; }
+    if (cur) cur.lines.push(line); else keep.push(line);
+  }
+  const personalityKept = [...keep];
+  moves.forEach(mv => { mv.text = mv.lines.join('\n').trim(); });
+  // "Personality:" blocks stay in Personality (without the label); "Name:" is dropped when it matches.
+  for (const mv of moves.filter(m => m.target === 'personality')) personalityKept.push(mv.text);
+  // Key memories: single labelled lines.
+  const kmKept = [];
+  for (const line of (v.key_memories || '').split('\n')) {
+    const m = line.match(LABEL_RE); let t = m && sortTarget(m[1]);
+    if (!t && /^\s*(?:[-*•]\s*)?love language/i.test(line)) { moves.push({target: 'love', label: 'Love language', text: line.replace(/^\s*[-*•]\s*/, '').trim(), from: 'key_memories', whole: true}); continue; }
+    if (t && !['personality', 'name', 'age', 'appearance'].includes(t)) { moves.push({target: t, label: m[1].trim(), text: m[2].trim(), from: 'key_memories'}); continue; }
+    kmKept.push(line);
+  }
+  const real = moves.filter(m => m.target !== 'personality' && m.text);
+  const shared = {}; real.forEach(m => { shared[m.target] = (shared[m.target] || 0) + 1; });
+  const fromP = {}; real.filter(m => m.from === 'personality').forEach(m => { fromP[m.target] = (fromP[m.target] || 0) + 1; });
+  real.forEach(m => { if (!m.whole && (KEEP_LABEL.has(m.target) || m.from === 'key_memories' || fromP[m.target] > 1)) m.text = `${m.label}: ${m.text}`; });
+  return {moves: real, personality: personalityKept.join('\n').replace(/\n{3,}/g, '\n\n').trim(), key_memories: kmKept.join('\n').trim()};
+}
+
+const SORT_NAMES = {flaws:'Flaws', motives:'Motives and beliefs', love:'Love and relationships', backstory:'Backstory', skills:'Skills and abilities',
+                    daily:'Daily life', people:'People in their life', likes:'Likes and dislikes', appearance:'Appearance', age:'Age', name:'Name'};
+function sortBar(f) {
+  const bar = el('div', {class:'sortbar'});
+  const p = el('p'); const btn = el('button', {class:'btn', type:'button'}, 'Sort into sections');
+  bar.append(p, btn);
+  const refresh = () => {
+    const prop = sortProposal(f.values());
+    const parts = [...new Set(prop.moves.filter(m => m.target !== 'name').map(m => SORT_NAMES[m.target]))];
+    bar.hidden = !prop.moves.length;
+    p.textContent = `Your description has labelled parts that could go into their own sections (${parts.join(', ')}). ` +
+      'Separate sections help the model find the right detail at the right moment.';
+  };
+  btn.onclick = async () => {
+    const v = f.values(); const prop = sortProposal(v);
+    const list = el('ul', {class:'sortlist'});
+    const boxes = prop.moves.map(m => {
+      const cb = el('input', {type:'checkbox'}); cb.checked = true;
+      list.append(el('li', {}, cb, el('div', {}, el('b', {}, m.target === 'name' ? `${m.label} line` : `${m.label} → ${SORT_NAMES[m.target]}`),
+        el('small', {}, m.target === 'name' ? 'Removed: the name already has its own field.' : m.text.slice(0, 160) + (m.text.length > 160 ? '…' : '')))));
+      return cb;
+    });
+    const intro = el('p', {}, 'Each part moves out of ' + (prop.moves.some(m => m.from === 'key_memories') ? 'Personality or Key Memories' : 'Personality') +
+      ' into its own section. Untick anything that should stay. You can review everything before saving.');
+    const go = await chooseDialog({title: 'Sort into sections', body: el('div', {}, intro, list),
+                                   buttons: [{label: 'Sort', value: true, primary: true}], wide: true});
+    if (!go) return;
+    const chosen = prop.moves.filter((_, i) => boxes[i].checked);
+    const skipped = prop.moves.filter((_, i) => !boxes[i].checked);
+    // rebuild the source fields: kept text + anything left unticked
+    const back = src => skipped.filter(m => m.from === src).map(m => (src === 'personality' && !m.text.startsWith(m.label + ':') ? `${m.label}: ${m.text}` : m.text));
+    const add = {};
+    for (const m of chosen) {
+      if (m.target === 'name') continue;
+      const text = m.target === 'age' ? m.text.split('\n')[0].replace(/\.$/, '') : m.text;
+      add[m.target] = add[m.target] ? (m.target === 'age' ? add[m.target] : add[m.target] + '\n' + text) : text;
+    }
+    for (const [k, text] of Object.entries(add)) {
+      const inp = f.inputs[k]; if (!inp) continue;
+      const old = (inp.get() || '').trim();
+      inp.set(k === 'age' ? (old || text) : (old ? old + '\n\n' + text : text));
+    }
+    f.inputs.personality.set([prop.personality, ...back('personality')].filter(Boolean).join('\n\n'));
+    f.inputs.key_memories.set([prop.key_memories, ...back('key_memories')].filter(Boolean).join('\n'));
+    f.changed = true; if (f.onChange) f.onChange();
+    say(`Sorted into ${Object.keys(add).length} section${Object.keys(add).length === 1 ? '' : 's'}. Check them, then Save.`, 'ok');
+    refresh();
+  };
+  const prev = f.onChange; f.onChange = () => { if (prev) prev(); refresh(); };
+  refresh();
+  return bar;
+}
+
+// How much of the model's memory a character's (or NPC's) description takes, on every reply.
+let memoryInfo = null;
+async function loadMemoryInfo() {
+  if (memoryInfo) return memoryInfo;
+  try {
+    const j = await api('/api/settings');
+    const auto = j.settings.context_auto !== false;
+    memoryInfo = {tokens: auto ? (j.memory_now || {}).auto || 6000 : j.settings.context_budget, auto, ctx: (j.memory_now || {}).ctx};
+  } catch (e) { memoryInfo = {tokens: 6000, auto: true}; }
+  return memoryInfo;
+}
+const TRAIT_KEYS = ['flaws', 'motives', 'love', 'backstory', 'skills', 'daily', 'people', 'likes'];
+const ALWAYS_SENT = {character: ['age', 'summary', 'personality', ...TRAIT_KEYS, 'appearance', 'directive', 'example', 'key_memories', 'story_premise'],
+                     npc: ['summary', 'personality', 'flaws', 'motives', 'love', 'appearance', 'directive', 'example']};
+function memoryMeter(kind, form) {
+  const text = el('div'); const bar = el('div', {class:'bar'}, el('div'));
+  const box = el('div', {class:'mem'}, text, bar);
+  const update = async () => {
+    const m = await loadMemoryInfo();
+    const v = form.values();
+    const used = Math.round(ALWAYS_SENT[kind].reduce((a, k) => a + (v[k] || '').length, 0) / 4);
+    const pct = used / m.tokens * 100;
+    text.textContent = `${kind === 'npc' ? 'When they speak, their' : 'Their'} description takes about ${used.toLocaleString()} of ` +
+      `~${m.tokens.toLocaleString()} tokens of memory (${Math.round(pct)}%)` +
+      (pct > 45 ? '. That leaves less room for the conversation and world: consider trimming, or raise the model\'s Context Length in LM Studio.' :
+       '. The rest is for the world, the story so far and the chat.');
+    bar.firstChild.style.width = Math.min(100, pct) + '%';
+    bar.firstChild.style.background = pct > 45 ? 'var(--bad)' : pct > 30 ? 'var(--warn)' : 'var(--good)';
+  };
+  update();
+  return {el: box, update};
+}
+
+// list of items + the form for the selected one
+async function itemPage({kind, getItems, newLabel, empty, newExtra, after, onForm, startId}) {
+  const chips = el('div', {class:'chips'}); const formBox = el('div');
+  if (single) main.append(formBox); else main.append(chips, formBox);
+  const token = pageToken;
+  let items = getItems();
+  let selected = single ? (startId || '__new__') : (items.length ? items[0].id : '__new__');
+  const draw = async () => {
+    if (token !== pageToken) return;   // we've moved to another page
+    items = getItems();
+    chips.innerHTML = '';
+    if (!items.length) chips.append(el('span', {class:'empty'}, empty));
+    items.forEach(it => chips.append(el('button', {class:'chip' + (it.id === selected ? ' on' : ''),
+      onclick: () => pick(it.id), title: it.pin ? 'Always on' : undefined}, it.label, it.sub ? el('small', {}, it.sub) : '', it.pin ? el('span', {class:'pin'}, '●') : '')));
+    chips.append(el('button', {class:'chip add' + (selected === '__new__' ? ' on' : ''), onclick: () => pick('__new__')}, newLabel));
+    if (['character', 'user'].includes(kind)) chips.append(el('button', {class:'chip add', title:'Add a character or player from a .json file', onclick: async () => {
+      if (dirty() && !confirm('Unsaved changes. Import without saving them?')) return;
+      const r = await importCard(uid); if (!r) return;
+      forms.forEach(x => x.changed = false); await refreshOverview();
+      if (r.kind !== kind) { say(`Imported ${r.name} as a ${r.kind === 'user' ? 'player' : 'character'} (see the ${r.kind === 'user' ? 'Players' : 'Characters'} step).`, 'ok'); return; }
+      selected = r.id; await draw(); say(`${r.replaced ? 'Replaced' : 'Imported'} ${r.name} ✓`, 'ok');
+    }}, '⇪ Import'));
+    formBox.innerHTML = ''; forms = [];
+    const isNew = selected === '__new__';
+    const d = await loadDoc(kind, isNew ? null : selected);
+    let extra = null;
+    if (isNew && newExtra) { const x = newExtra(); formBox.append(x.el); extra = x.extra; }
+    const f = docForm({kind, id: isNew ? null : selected, defs: FORMS[kind], fields: d.fields, mtime: d.mtime, extra});
+    if (isNew) f.changed = false;
+    if (onForm) onForm(f, isNew ? null : selected);
+    if (['character', 'npc', 'user'].includes(kind)) formBox.append(portraitCard(kind, isNew ? null : selected));
+    if (kind === 'character') formBox.append(backgroundCard('character', isNew ? null : selected));
+    if (['character', 'npc'].includes(kind)) {
+      const meter = memoryMeter(kind, f);
+      formBox.append(meter.el);
+      const prev = f.onChange; f.onChange = () => { if (prev) prev(); meter.update(); };
+    }
+    const orig = f.save;
+    f.save = async (force) => {
+      if (isNew && !f.changed) return true;      // empty "new" form: nothing to save
+      const ok = await orig(force);
+      if (ok) {
+        await refreshOverview();
+        if (isNew) {
+          selected = f.id;
+          if (single) {   // reopen as the saved item, so the page title, portrait and premises are all there
+            forms.forEach(x => x.changed = false);
+            if (closing) return ok;            // "Save & Close": we're leaving anyway
+            setTimeout(() => location.replace(`/edit?u=${encodeURIComponent(uid)}&item=${kind}&id=${encodeURIComponent(f.id)}&back=${encodeURIComponent(backTo)}`), 0);
+            return ok;
+          }
+          setTimeout(draw, 0);
+        }
+      }
+      return ok;
+    };
+    forms.push(f);
+    if (kind === 'character') formBox.append(sortBar(f));
+    formBox.append(f.el);
+    if (after) await after(isNew ? null : selected, formBox);
+    if (!isNew && ['character', 'user'].includes(kind)) {
+      const what = kind === 'user' ? 'player' : 'character';
+      const exp = el('button', {class:'btn', type:'button', onclick: async () => {
+        if (dirty() && !(await saveAll())) return;
+        exportCard(uid, kind, selected);
+      }}, 'Export');
+      formBox.append(el('div', {class:'share'}, el('p', {}, `Save this ${what} as a .json file, to keep a copy or share with a friend. ` +
+        (kind === 'character' ? 'Includes their portrait and premises, never your stories.' : 'Includes their portrait, never your stories.')), exp));
+    }
+    if (!isNew) {
+      const it = items.find(x => x.id === selected) || {label: selected};
+      const warn = {character: 'All of their stories (with every player) go with them.',
+                    user: 'Their stories with every character in this world go with them.'}[kind] || '';
+      const what = {character:'character', npc:'NPC', user:'player', lore:'entry'}[kind];
+      formBox.append(dangerZone(`Delete this ${what}. ${warn}`, `Delete ${what}`, async () => {
+        if (!(await deleteItem(kind, selected, it.label, warn))) return;
+        forms.forEach(x => x.changed = false);
+        if (single) { location.href = backTo; return; }
+        await refreshOverview(); items = getItems();
+        selected = items.length ? items[0].id : '__new__';
+        await draw();
+      }));
+    }
+  };
+  const pick = async id => {
+    if (dirty() && !confirm('Unsaved changes. Switch without saving?')) return;
+    selected = id; await draw();
+  };
+  await draw();
+}
+
+// ------------------------------------------------------------------ start
+(async () => {
+  if (uid) await refreshOverview();
+  else step = 0;
+  await render();
+})();
+window.addEventListener('beforeunload', e => { if (dirty()) { e.preventDefault(); e.returnValue = ''; } });
+</script>
+</body>
+</html>

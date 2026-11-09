@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VersiDen</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<link rel="icon" href="/static/icons/icon-192.png">
+<meta name="theme-color" content="#121015">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="/static/theme.css">
+<script src="/static/theme.js"></script>
+<style>
+  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --accent:#b48cf0; --text:#f0e9f3; --muted:#ada2b6; --dim:#7b7085; --line:#352b3c; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 'Inter', system-ui, sans-serif; display:flex; justify-content:center; padding:44px 20px; }
+  main { width:100%; max-width:860px; }
+  .top { display:flex; justify-content:space-between; align-items:center; margin-bottom:26px; }
+  h1 { font-size:24px; font-weight:600; margin:0; }
+  .toplinks { position:relative; display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+  #themeBtn { background:none; color:var(--muted); font:inherit; font-size:14px; border:1px solid var(--line); border-radius:10px; padding:6px 12px; cursor:pointer; }
+  #themeBtn:hover, .top a:hover { color:var(--text); border-color:var(--line-strong); }
+  #themePop { position:absolute; top:calc(100% + 8px); right:0; width:290px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; z-index:20;
+              box-shadow:0 12px 30px rgba(0,0,0,.35); }
+  .top a { color:var(--muted); text-decoration:none; font-size:14px; border:1px solid var(--line); border-radius:10px; padding:6px 12px; }
+  h2 { font-size:14px; color:var(--muted); font-weight:500; margin:30px 0 10px; }
+  .unis { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px; }
+  .uni { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px 16px; cursor:pointer; position:relative; min-height:82px; }
+  .uni.on { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
+  .uni b { display:block; font-weight:600; padding-right:60px; }
+  .uni span { color:var(--muted); font-size:13px; }
+  .uni .edit { position:absolute; top:11px; right:11px; color:var(--muted); font-size:12.5px; text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:2px 8px; }
+  .uni .edit:hover { color:var(--text); }
+  .uni.add { border-style:dashed; color:var(--muted); display:flex; align-items:center; justify-content:center; text-decoration:none; }
+  .chars { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
+  .char { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:16px; }
+  .char .head { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+  .char .head b { font-size:16px; font-weight:600; }
+  .av { width:46px; height:46px; border-radius:50%; object-fit:cover; display:inline-flex; align-items:center; justify-content:center; font-weight:600; color:white; background:var(--avatar); flex-shrink:0; }
+  .plays { display:flex; flex-direction:column; gap:6px; }
+  .play { display:flex; justify-content:space-between; align-items:center; background:var(--field); border:1px solid transparent; color:var(--text); border-radius:12px; padding:9px 12px; cursor:pointer; font:inherit; font-size:14px; text-align:left; }
+  .play:hover { border-color:var(--line-strong); }
+  .play.cont { background:var(--accent); color:var(--on-accent); font-weight:600; }
+  .play small { color:var(--muted); font-size:12.5px; }
+  .play.cont small { color:var(--cont-small); }
+  .char { position:relative; }
+  .char .cedit { position:absolute; top:14px; right:14px; color:var(--muted); font-size:12.5px; text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:2px 8px; }
+  .char .cedit:hover { color:var(--text); }
+  .char .head b { padding-right:56px; }
+  .divider { border:0; border-top:1px solid var(--line); margin:30px 0 4px; }
+  .char.add { border-style:dashed; color:var(--muted); display:flex; align-items:center; justify-content:center; min-height:96px; text-decoration:none; font-size:14px; }
+  .char.add:hover, .pchip.add:hover { color:var(--text); }
+  .players { display:flex; flex-wrap:wrap; gap:8px; }
+  .pchip { display:inline-flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--line); color:var(--text); border-radius:999px; padding:5px 12px 5px 5px; text-decoration:none; font-size:14px; cursor:pointer; font-family:inherit; }
+  .pchip .av { width:26px; height:26px; font-size:12px; }
+  .pchip small { color:var(--dim); }
+  .pchip.add { color:var(--muted); border-style:dashed; padding:5px 12px; }
+  .sec { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+  .sec h2 { margin-bottom:10px; }
+  .linkbtn { background:none; border:1px solid var(--line); color:var(--muted); border-radius:10px; padding:5px 11px; font:inherit; font-size:13px; cursor:pointer; }
+  .linkbtn:hover { color:var(--text); }
+  .note { color:var(--muted); font-size:14px; margin-top:12px; min-height:20px; }
+  .brand { display:flex; align-items:center; gap:10px; font-family:'Literata', Georgia, serif; font-size:27px; font-weight:600; color:var(--text); margin-bottom:8px; }
+  .brand img { width:34px; height:34px; }
+  .top h1 { font-family:'Literata', Georgia, serif; font-weight:500; font-size:19px; color:var(--muted); }
+  .none { color:var(--muted); font-size:14px; }
+  @media (max-width: 560px) { .linkbtn .long { display:none; } .char.add { min-height:64px; } }
+  .none a { color:var(--text); }
+  .error { color:var(--bad); font-size:14px; margin-top:12px; }
+  @media (pointer: coarse) { input, textarea, select { font-size:16px !important; } }
+  .char .head b .sum { display:block; font-weight:400; font-size:13px; color:var(--muted); margin-top:2px; line-height:1.35; }
+</style>
+</head>
+<body>
+<main>
+  <div class="top" style="align-items:flex-start"><div><div class="brand"><img src="/static/icons/logo.svg" alt="">VersiDen</div><h1>Choose your story</h1></div><span class="toplinks"><button type="button" id="themeBtn" aria-haspopup="true" aria-expanded="false">◐ Theme</button><a href="/guide">? Guide</a><a href="/settings">⚙ Model Settings</a>
+    <div id="themePop" hidden></div></span></div>
+  <h2>World</h2>
+  <div class="unis" id="unis"></div>
+  <div id="inside"></div>
+  <div class="error" id="err"></div>
+  <div class="note" id="note"></div>
+</main>
+<script src="/static/scene.js"></script>
+<script src="/static/cards.js"></script>
+<script>
+let data, uni = null;
+const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function avatar(src, name) {
+  if (src) { const i = document.createElement('img'); i.className = 'av'; i.src = src; i.alt = ''; return i; }
+  const d = document.createElement('span'); d.className = 'av'; d.textContent = (name || '?').trim()[0].toUpperCase(); return d;
+}
+function render() {
+  const unis = $('unis'); unis.innerHTML = '';
+  data.universes.forEach(u => {
+    const c = document.createElement('div'); c.className = 'uni' + (u.id === uni ? ' on' : '');
+    c.innerHTML = `<b>${esc(u.name)}</b><span>${esc(u.genre || '')}${u.genre ? ' · ' : ''}${u.characters.length} character${u.characters.length === 1 ? '' : 's'}</span>
+      <a class="edit" href="/edit?u=${encodeURIComponent(u.id)}" title="Edit this world: World foundations, Places & Lore, NPCs, characters, players">✎ Edit</a>`;
+    c.onclick = e => { if (e.target.closest('.edit')) return; uni = u.id; render(); };
+    unis.append(c);
+  });
+  const add = document.createElement('a'); add.className = 'uni add'; add.href = '/edit'; add.textContent = '+ New world'; unis.append(add);
+
+  const box = $('inside'); box.innerHTML = '';
+  const u = data.universes.find(x => x.id === uni); if (!u) return;
+  const back = encodeURIComponent(`/start?u=${u.id}`);
+  const editUrl = (kind, id) => `/edit?u=${encodeURIComponent(u.id)}&item=${kind}${id ? '&id=' + encodeURIComponent(id) : ''}&back=${back}`;
+
+  const hr = document.createElement('hr'); hr.className = 'divider'; box.append(hr);
+  const sec = document.createElement('div'); sec.className = 'sec';
+  sec.innerHTML = '<h2>Characters</h2>';
+  const imp = document.createElement('button'); imp.className = 'linkbtn'; imp.type = 'button';
+  imp.innerHTML = '⇪ Import<span class="long"> character or player</span>'; imp.title = 'Add a character or player from a .json file';
+  imp.onclick = async () => {
+    const r = await importCard(u.id); if (!r) return;
+    $('note').textContent = `${r.replaced ? 'Replaced' : 'Imported'} ${r.name} as a ${r.kind === 'user' ? 'player' : 'character'}.`;
+    await reload();
+  };
+  sec.append(imp); box.append(sec);
+
+  const grid = document.createElement('div'); grid.className = 'chars'; box.append(grid);
+  u.characters.forEach(c => {
+    const card = document.createElement('div'); card.className = 'char';
+    const head = document.createElement('div'); head.className = 'head'; head.append(avatar(c.avatar, c.name));
+    const nm = document.createElement('b'); nm.textContent = c.name;
+    if (c.summary) { const sm = document.createElement('small'); sm.className = 'sum'; sm.textContent = c.summary; nm.append(sm); }
+    head.append(nm); card.append(head);
+    const ed = document.createElement('a'); ed.className = 'cedit'; ed.href = editUrl('character', c.id); ed.textContent = '✎ Edit';
+    ed.title = `Edit ${c.name}: personality, appearance, premises, portrait`; card.append(ed);
+    if (!u.users.length) { const n = document.createElement('p'); n.className = 'none'; n.textContent = 'Add a player below to start a story.'; card.append(n); }
+    else card.append(playAsRow(c, u.users, null, (p, isNew) => isNew ? begin(u.id, c.id, p) : go(u.id, c.id, p)));
+    grid.append(card);
+  });
+  const addC = document.createElement('a'); addC.className = 'char add'; addC.href = editUrl('character'); addC.textContent = '+ New character';
+  grid.append(addC);
+
+  const h = document.createElement('h2'); h.textContent = 'Players: who you play as in ' + u.name + ' (click to edit)'; box.append(h);
+  const players = document.createElement('div'); players.className = 'players'; box.append(players);
+  u.users.forEach(p => {
+    const a = document.createElement('a'); a.className = 'pchip'; a.href = editUrl('user', p.id); a.title = `Edit ${p.name}`;
+    a.append(avatar(p.avatar, p.name), document.createTextNode(p.name));
+    const sm = document.createElement('small'); sm.textContent = '✎'; a.append(sm); players.append(a);
+  });
+  const addP = document.createElement('a'); addP.className = 'pchip add'; addP.href = editUrl('user'); addP.textContent = '+ New player';
+  players.append(addP);
+}
+async function reload() {
+  data = await (await fetch('/api/options')).json();
+  render();
+}
+async function go(universe, character, user) {
+  const r = await fetch('/api/session', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({universe, character, user})});
+  const j = await r.json(); if (j.error) $('err').textContent = j.error; else location.href = '/';
+}
+async function begin(universe, character, user) {
+  if (await setTheScene({universe, character, user})) location.href = '/';
+}
+fetch('/api/options').then(r => r.json()).then(d => {
+  data = d;
+  const wanted = new URLSearchParams(location.search).get('u');
+  if (wanted && d.universes.some(u => u.id === wanted)) uni = wanted;
+  else if (d.selected && d.universes.some(u => u.id === d.selected.universe)) uni = d.selected.universe;
+  else if (d.universes.length) uni = d.universes[0].id;
+  render();
+});
+
+// colour theme
+(() => {
+  const btn = document.getElementById('themeBtn'), pop = document.getElementById('themePop');
+  pop.append(VersiTheme.picker());
+  btn.onclick = e => { e.stopPropagation(); pop.hidden = !pop.hidden; btn.setAttribute('aria-expanded', !pop.hidden); };
+  document.addEventListener('click', e => { if (!pop.hidden && !e.target.closest('#themePop')) { pop.hidden = true; btn.setAttribute('aria-expanded', false); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') pop.hidden = true; });
+})();
+</script>
+</body>
+</html>

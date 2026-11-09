@@ -1,0 +1,33 @@
+# Your private worlds: characters, players, chats, lore, portraits, settings
+worlds/
+universes/
+universe/
+
+# Old single-character layout (pre-universe)
+character.json
+data/
+world/
+npcs/
+lore/
+
+__pycache__/
+*.pyc
+
+# Your own settings and backups
+config.toml
+backups/
+logs/
+
+# Release zips built for sharing
+*.zip
+
+# Python environments and caches
+.venv/
+venv/
+env/
+*.log
+
+# Windows / macOS system files
+Thumbs.db
+desktop.ini
+.DS_Store

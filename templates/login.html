@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{ app_name }} · Log in</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<link rel="icon" href="/static/icons/icon-192.png">
+<meta name="theme-color" content="#121015">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="{{ app_name }}">
+<link rel="stylesheet" href="/static/fonts/fonts.css">
+<link rel="stylesheet" href="/static/theme.css">
+<script src="/static/theme.js"></script>
+<style>
+  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --accent:#b48cf0; --text:#f0e9f3; --muted:#ada2b6; --line:#352b3c; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100dvh; background:var(--bg); color:var(--text); font:16px/1.5 'Inter', system-ui, sans-serif;
+         display:flex; align-items:center; justify-content:center; padding:24px; }
+  form { width:100%; max-width:360px; background:var(--card); border-radius:22px; padding:26px 22px; text-align:center; }
+  img { width:64px; height:64px; border-radius:16px; margin-bottom:10px; }
+  h1 { font-size:20px; font-weight:600; margin:0 0 4px; }
+  p { color:var(--muted); font-size:14px; margin:0 0 18px; }
+  input { width:100%; background:var(--field); color:var(--text); border:0; border-radius:14px; padding:14px 16px; font:inherit; font-size:16px; outline:none; margin-bottom:12px; }
+  button { width:100%; background:var(--accent); color:var(--on-accent); border:0; border-radius:14px; padding:13px; font:inherit; cursor:pointer; }
+  .err { color:var(--bad); font-size:14px; margin:-2px 0 12px; }
+</style>
+</head>
+<body>
+<form method="post" action="/login">
+  <img src="/static/icons/icon-192.png" alt="">
+  <img src="/static/icons/logo.svg" alt="" style="width:56px;height:56px;display:block;margin:0 auto 10px">
+  <h1 style="font-family:'Literata', Georgia, serif">{{ app_name }}</h1>
+  <p>Enter the passphrase you set in Model Settings on your PC. You'll stay logged in on this device.</p>
+  {% if error %}<div class="err">{{ error }}</div>{% endif %}
+  <input type="password" name="passphrase" placeholder="Passphrase" autocomplete="current-password" autofocus required>
+  <input type="hidden" name="next" value="{{ next }}">
+  <button type="submit">Log in</button>
+</form>
+</body>
+</html>
