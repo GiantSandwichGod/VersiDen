@@ -23,6 +23,8 @@
   .top { display:flex; align-items:center; justify-content:space-between; padding:14px 24px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--bg); z-index:5; }
   .top b { font-weight:600; }
   .top a { color:var(--muted); text-decoration:none; font-size:14px; }
+  .top .toplinks { display:flex; gap:18px; flex-shrink:0; }
+  .top b { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:12px; }
   .layout { display:flex; max-width:1100px; margin:0 auto; }
   nav { width:230px; padding:24px 12px; flex-shrink:0; position:sticky; top:52px; align-self:flex-start; }
   nav button { display:flex; gap:10px; align-items:center; width:100%; text-align:left; background:none; border:0; color:var(--muted);
@@ -34,7 +36,7 @@
   nav .ngroup:empty { border-top:1px solid var(--line); padding:0; margin:14px 12px 10px; }
   nav button.on .n { border-color:var(--accent); background:var(--accent); color:var(--on-accent); }
   nav button:disabled { opacity:.35; cursor:default; }
-  main { flex:1; padding:24px 24px 120px; max-width:760px; }
+  main { flex:1; min-width:0; padding:24px 24px 120px; max-width:760px; }
   h1 { font-size:22px; font-weight:600; margin:4px 0 4px; }
   .lead { color:var(--muted); margin:0 0 22px; }
   .section-title { display:flex; align-items:center; justify-content:center; gap:6px; color:var(--muted); font-size:14px; margin:26px 0 12px; }
@@ -74,7 +76,7 @@
   .card textarea { resize:vertical; min-height:56px; line-height:1.6; }
   .card textarea:focus, .card input[type=text]:focus, .card select:focus { box-shadow:0 0 0 1px var(--line-strong) inset; }
   .card input[type=color] { width:52px; height:40px; border:0; background:none; cursor:pointer; }
-  .portrait { display:flex; align-items:center; gap:14px; }
+  .portrait { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   .bgcard .bgrow { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   .bgcard .bgrow .ptext { flex:1 1 260px; font-size:14px; }
   .bgcard .pbtns { display:flex; gap:8px; }
@@ -83,7 +85,7 @@
   .portrait .pic { width:64px; height:64px; border-radius:50%; background:var(--avatar); display:flex; align-items:center; justify-content:center;
                    font-size:24px; font-weight:600; overflow:hidden; flex-shrink:0; }
   .portrait .pic img { width:100%; height:100%; object-fit:cover; }
-  .portrait .ptext { flex:1; font-size:14px; }
+  .portrait .ptext { flex:1 1 160px; min-width:0; font-size:14px; }
   .portrait .phint, .bgcard .phint { color:var(--dim); font-size:13px; }
   .row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   .row2 .card { margin-bottom:0; } .row2 { margin-bottom:14px; }
@@ -118,13 +120,31 @@
   .share { margin:26px 0 0; padding:14px 16px; border:1px solid var(--line); border-radius:16px; display:flex; align-items:center; gap:12px; }
   .share p { flex:1; margin:0; color:var(--muted); font-size:13px; }
   @media (max-width: 800px) { nav { display:none; } .row2 { grid-template-columns:1fr; } }
+  /* phones (e.g. iPhone 15: 393 px wide) */
+  @media (max-width: 600px) {
+    .top { padding:12px 16px; }
+    .top .toplinks { gap:14px; }
+    .top .long { display:none; }
+    main { padding:18px 14px 130px; }
+    .card { padding-left:14px; padding-right:14px; }
+    .portrait .ptext { flex:1 1 calc(100% - 80px); }
+    .portrait > .btn { flex:1 1 0; padding-left:8px; padding-right:8px; }
+    .portrait .pic { width:56px; height:56px; }
+    .bgcard .pbtns { flex:1 1 100%; } .bgcard .pbtns .btn { flex:1; }
+    .danger, .share { flex-wrap:wrap; } .danger p, .share p { flex-basis:100%; }
+    .actions { padding-bottom:max(12px, env(safe-area-inset-bottom)); }
+    .actions .inner { flex-wrap:wrap; gap:8px; }
+    .actions .status { order:-1; flex-basis:100%; }
+    .actions .status:empty { display:none; }
+    .actions .btn { flex:1 1 0; padding:10px 8px; white-space:nowrap; }
+  }
   @media (pointer: coarse) { input, textarea, select { font-size:16px !important; } }
 </style>
 </head>
 <body>
 <div class="top">
   <b id="uniName">New world</b>
-  <span><a href="/guide" style="margin-right:18px">? Guide</a><a href="/settings" style="margin-right:18px">⚙ Model Settings</a><a href="/start">← Back to stories</a></span>
+  <span class="toplinks"><a href="/guide">? <span class="long">Guide</span></a><a href="/settings" title="Model Settings">⚙ <span class="long">Model Settings</span></a><a href="/start">← Back<span class="long"> to stories</span></a></span>
 </div>
 <div class="layout">
   <nav id="nav"></nav>

@@ -499,12 +499,28 @@ class Cancelled(Exception):
 stop_event = threading.Event()   # set by the Stop button; checked while a reply is streaming in
 
 
+# Signs that the model kept writing past the end of its turn (imitating the app's notes, a chat template,
+# or the player's next message). Everything from the first one on is dropped.
+RUNOFF_STOPS = ["[Instructions]", "<|im_end|>", "<|im_start|>"]   # also sent to LM Studio as stop words
+
+
+def cut_runoff(text, user_name=""):
+    names = [n for n in {user_name, user_name.split()[0] if user_name.split() else ""} if n]
+    who = "|".join(re.escape(n) for n in sorted(names, key=len, reverse=True))
+    pattern = (r"\[Instructions\]|<\|im_(?:end|start)\|>|\[/?INST\]|<\|eot_id\|>|<\|start_header_id\|>|</s>"
+               r"|^\s*#{2,}\s*(?:Instruction|Response|Input)\b|^\s*How [^\n]{1,60} responds:")
+    if who:
+        pattern += rf"|^\s*\[?(?:{who})\]?\s*:|^\s*What (?:does|will) (?:{who})[^\n]{{0,30}} do\?"
+    m = re.search(pattern, text, flags=re.MULTILINE)
+    return text[:m.start()].rstrip() if m else text
+
+
 class LiveText:
     """Passes a reply on to the browser while it's being written, hiding the model's thinking
     and a leading 'Name:' the model sometimes adds."""
 
-    def __init__(self, emit, speaker):
-        self.emit, self.speaker = emit, speaker
+    def __init__(self, emit, speaker, user_name=""):
+        self.emit, self.speaker, self.user_name = emit, speaker, user_name
         self.reset(False, announce=False)
 
     def reset(self, thinking, announce=True):
@@ -523,6 +539,7 @@ class LiveText:
         if not self.sent and len(text) < len(self.speaker) + 4 and "\n" not in text:
             return  # wait a moment: it might start with "Name:"
         text = re.sub(name_prefix_re(self.speaker), "", text, count=1)
+        text = cut_runoff(text, self.user_name)   # never show the model writing past its turn
         if len(text) > self.sent:
             self.emit({"type": "delta", "text": text[self.sent:]})
             self.sent = len(text)
@@ -557,7 +574,7 @@ def stream_text(url, payload, cancellable, live=None):
         return "".join(parts)
 
 
-def call_llm(messages, max_tokens=None, temperature=None, think=False, cancellable=False, live=None):
+def call_llm(messages, max_tokens=None, temperature=None, think=False, cancellable=False, live=None, stop=None):
     """think=True: let the model reason first (only used for character/NPC replies, and only
     with the Qwen-style format). If the reasoning runs out of room, retry once without it."""
     st = settings()
@@ -573,11 +590,11 @@ def call_llm(messages, max_tokens=None, temperature=None, think=False, cancellab
         if live:
             live.reset(budget > 0, announce=live.sent > 0)
         text = stream_text(f"{LMSTUDIO_URL}/completions", {
-            **common, "prompt": to_qwen_prompt(messages, think=budget > 0), "stop": ["<|im_end|>", "<|im_start|>"]},
+            **common, "prompt": to_qwen_prompt(messages, think=budget > 0), "stop": (RUNOFF_STOPS + (stop or []))[:4]},
             cancellable, live)
         if budget and "</think>" not in text:   # thought until it ran out of room: answer without thinking
             return call_llm(messages, max_tokens=max_tokens, temperature=temperature, think=False,
-                            cancellable=cancellable, live=live)
+                            cancellable=cancellable, live=live, stop=stop)
         sent = to_qwen_prompt(messages, think=budget > 0)
         fmt = "Qwen-style (/v1/completions)"
     else:
@@ -585,7 +602,7 @@ def call_llm(messages, max_tokens=None, temperature=None, think=False, cancellab
             live.reset(False, announce=live.sent > 0)
         chat = to_chat_messages(messages)
         text = stream_text(f"{LMSTUDIO_URL}/chat/completions", {
-            **common, "messages": chat}, cancellable, live)
+            **common, "messages": chat, "stop": (RUNOFF_STOPS + (stop or []))[:4]}, cancellable, live)
         sent = "\n\n".join(f"===== {m['role'].upper()} =====\n{m['content']}" for m in chat)
         fmt = "model's own template (/v1/chat/completions)"
     reply = strip_thinking(text)
@@ -1204,11 +1221,28 @@ def active(history):
     return [m for m in history if not m.get("folded")]
 
 
+def journal_tokens(s, story=None):
+    """What the Journal adds to every reply: location, what they know, the relationship, recent events."""
+    story = story or read_story(s)
+    sent = story["events"][-(KEY_EVENTS_IN_PROMPT + 8):]
+    return est_tokens("\n".join([story["where"], story["about"], story["relationship"], *sent]))
+
+
+def fixed_prompt_tokens(s):
+    """Everything sent with every reply besides the chat itself: the character, the Journal, the world,
+    the player and the instructions. Counted for real, so a growing Journal makes room for itself."""
+    lore = min(always_used(s.u), WORLD_ALWAYS_MAX_CHARS) + WORLD_TRIGGERED_MAX_CHARS // 2
+    return (est_tokens(character_sheet(s.char, s.name)) + journal_tokens(s) + lore // 4
+            + est_tokens(user_info(s) + s.char["appearance"] + s.char["example"]) + 900)
+
+
 def summarise_old_messages(history, memory, s, emit=None):
     """If the conversation is getting too big, fold the oldest messages into memory."""
+    fixed = fixed_prompt_tokens(s)
+
     def total():
-        return est_tokens(character_sheet(s.char, s.name)) + sum(est_tokens(m["content"]) for m in active(history)) \
-            + est_tokens("\n".join(memory["summaries"])) + 3000  # room for lore, story, user
+        return fixed + sum(est_tokens(m["content"]) for m in active(history)) \
+            + est_tokens("\n".join(memory["summaries"]))
 
     budget = effective_budget()
     if emit and total() > budget and len(active(history)) > RECENT_KEEP:
@@ -1325,17 +1359,21 @@ def _update_main_story(s, text):
         f"Key events so far (latest):\n{events_txt}\n\n"
         "Read the latest part of the story below and update the notes. Reply in exactly this format:\n\n"
         "ABOUT:\n"
-        f"<everything {name} has actually learned about {user} in the story: personality, life, likes, things they shared. "
+        f"<what {name} has actually learned about {user} in the story: personality, life, likes, things they shared. "
         f"Only what {name} saw, heard or was told; if {name} hasn't learned {user}'s name yet, write 'Name: not known yet'. "
-        "Keep every existing fact unless it changed, add new ones. One short line each, starting with '- '.>\n"
+        "Never write lines for things that are unknown, and no guesses ('probably', 'based on'). Keep facts that still "
+        "hold, add new ones, merge related ones into one line, and drop trivia. At most 15 lines, one short fact each, "
+        "starting with '- '.>\n"
         "RELATIONSHIP:\n"
         f"<2-5 sentences on where {name} and {user} stand now and how it has changed>\n"
         "WHERE:\n"
         "<one short line: where the scene is happening now, the larger region or country first, then the exact place, "
         "e.g. 'Aestria, the road to Houlton'. Use the world's own place names. If they haven't moved, repeat the current one.>\n"
         "NEW EVENTS:\n"
-        "<one line per important NEW event not already listed (including anything that happened to "
-        "other characters, like an injury or a death), starting with '- ', or '- none'>"
+        "<only NEW turning points not already listed: things that change the story or the relationship, or that "
+        "someone will remember later (a first meeting, a promise, a secret revealed, an injury or death, arriving "
+        "somewhere new). Not small talk, routine actions or moods. Usually none, at most 2. One per line, starting "
+        "with '- ', or '- none'>"
     )
     try:
         out = call_llm([{"role": "system", "content": prompt}, {"role": "user", "content": text}],
@@ -1347,11 +1385,16 @@ def _update_main_story(s, text):
     if not m:
         return False
     about, rel, where, new_events = ((g or "").strip() for g in m.groups())
+    old_lines = [l for l in story["about"].splitlines() if l.strip().startswith("-")]
+    new_lines = [l.strip() for l in about.splitlines() if l.strip().startswith("-")
+                 and not re.search(r":\s*(unknown|not known|unclear|n/a)\.?$", l.strip(), flags=re.IGNORECASE)
+                 or re.match(r"^-\s*name\s*:", l.strip(), flags=re.IGNORECASE)]
     where = where.splitlines()[0].strip().strip("<>").strip() if where else ""
     if where and len(where) <= 160 and not where.lower().startswith(("unknown", "not ", "(not")):
         story["where"] = where
-    if about and len(about) >= 0.5 * len(story["about"]):  # don't let a bad update wipe facts
-        story["about"] = about
+    # a condensed list is welcome, but a reply that lost most facts is ignored (every version is backed up anyway)
+    if new_lines and len(new_lines) >= min(len(old_lines), 15) // 2:
+        story["about"] = "\n".join(new_lines[:15])
     if rel:
         story["relationship"] = rel
     stamp = datetime.now().strftime("%Y-%m-%d")
@@ -1553,14 +1596,25 @@ def reply_avoiding_sample(messages, example, s, live, **kw):
 
 def generate(speaker, s, history, memory, live=None):
     """One reply from the main character or an NPC. With `live`, the text streams to the browser."""
+    stop = [f"\n{s.user_name}:"]
     if speaker == s.name:
         text = reply_avoiding_sample(main_prompt(s, history, memory), s.char["example"], s, live,
-                                     think=True, cancellable=True)
-        return {"id": new_id(), "role": "assistant", "content": clean_reply(text, speaker)}
+                                     think=True, cancellable=True, stop=stop)
+        return {"id": new_id(), "role": "assistant", "content": finished_reply(text, speaker, s)}
     npc = find_npc(s.u, speaker)
     text = reply_avoiding_sample(npc_prompt(npc, s, history), npc["example"], s, live,
-                                 max_tokens=1200, think=True, cancellable=True)
-    return {"id": new_id(), "role": "assistant", "speaker": npc["name"], "content": clean_reply(text, npc["name"])}
+                                 max_tokens=1200, think=True, cancellable=True, stop=stop)
+    return {"id": new_id(), "role": "assistant", "speaker": npc["name"], "content": finished_reply(text, npc["name"], s)}
+
+
+def finished_reply(text, speaker, s):
+    """The reply as saved: without a leading 'Name:' and without anything the model wrote past its turn."""
+    cut = cut_runoff(clean_reply(text, speaker), s.user_name)
+    if cut != clean_reply(text, speaker):
+        print(f"[reply] trimmed text the model wrote past the end of {speaker}'s turn")
+    if not cut.strip():
+        raise EmptyReply(text)
+    return cut
 
 
 def new_id():
@@ -1927,7 +1981,7 @@ def sse(work):
 def stream_reply(emit, speaker, s, history, memory):
     """Start a bubble for `speaker`, stream the reply into it, and return the finished message."""
     emit({"type": "start", **speaker_card(speaker, s)})
-    live = LiveText(emit, speaker)
+    live = LiveText(emit, speaker, s.user_name)
     msg = generate(speaker, s, history, memory, live=live)
     return msg
 
@@ -2288,7 +2342,8 @@ def journal_for_ui(s):
             npcs.append({"name": n["name"], "color": n["color"], "status": note["status"], "notes": note["notes"],
                          "avatar": avatar_url(s.u, "npc", n["id"])})
     memory = load_json(s.memory, {"summaries": []})
-    return {"name": s.name, "user": s.user_name, "where": story["where"], "about": story["about"], "relationship": story["relationship"],
+    return {"name": s.name, "user": s.user_name, "tokens": journal_tokens(s, story), "budget": effective_budget(),
+            "where": story["where"], "about": story["about"], "relationship": story["relationship"],
             "events": "\n".join(story["events"]), "npcs": npcs, "summaries": memory["summaries"]}
 
 
