@@ -540,9 +540,28 @@ async function render(keepStatus) {
   window.scrollTo(0, 0);
 }
 
-async function deleteItem(kind, id, name, extraWarning) {
-  const msg = `Delete ${name}?${extraWarning ? '\n\n' + extraWarning : ''}\n\nIt's moved to the trash folder (worlds\\.trash), so you can still get it back by moving it out again.`;
-  if (!confirm(msg)) return false;
+const TRASH_NOTE = 'You can still get it back: it goes to the trash folder inside VersiDen (worlds › .trash), not straight to deletion.';
+const andList = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1];
+async function deleteInfo(kind, id) {
+  try { return await (await fetch(`/api/delete_info?u=${encodeURIComponent(uid)}&kind=${kind}&id=${encodeURIComponent(id || '')}`)).json(); }
+  catch (e) { return {}; }
+}
+async function deleteItem(kind, id, name) {
+  const info = await deleteInfo(kind, id);
+  const nm = info.name || name, first = nm.split(' ')[0];
+  const lines = [];
+  if (kind === 'character' || kind === 'user') {
+    const w = info.with || [], n = w.length;
+    lines.push(n ? `Their ${n === 1 ? 'story' : n + ' stories'} (with ${andList(w)}) will be deleted too.`
+                 : 'They have no stories yet.');
+  } else if (kind === 'npc') lines.push('They stop appearing in your stories. Messages they already wrote stay in the chat.');
+  lines.push(TRASH_NOTE);
+  const buttons = [];
+  if (kind === 'character' || kind === 'user')
+    buttons.push({label:'Export first', left:true, action: btn => { exportCard(uid, kind, id); btn.textContent = 'Exported ✓'; }});
+  buttons.push({label: ['character', 'user', 'npc'].includes(kind) ? `Delete ${first}` : 'Delete', value:'del', danger:true});
+  const go = await chooseDialog({title:`Delete ${nm}?`, text: lines.join('\n\n'), cancel:'Keep', buttons});
+  if (go !== 'del') return false;
   const r = await api('/api/delete', {u: uid, kind, id});
   if (r.error) { say(r.error, 'bad'); return false; }
   say(`${name} moved to the trash.`, 'ok');
@@ -565,10 +584,22 @@ const PAGES = {
     if (uid) main.append(backgroundCard('world', null));
     if (uid) main.append(dangerZone('Delete this whole world: its foundations, Places & Lore, characters, NPCs, players and every story in it.',
       'Delete world', async () => {
-        const name = overview.info.name;
-        const typed = prompt(`This deletes ${name} with everything in it.\n\nType the world's name to confirm:`);
-        if (typed === null) return;
-        if (typed.trim().toLowerCase() !== name.trim().toLowerCase()) { say('Name didn\'t match. Nothing was deleted.', 'bad'); return; }
+        const name = overview.info.name, info = await deleteInfo('universe');
+        const parts = [['characters','character','characters'], ['players','player','players'], ['npcs','NPC','NPCs'], ['stories','story','stories']]
+          .filter(([k]) => info[k]).map(([k, one, many]) => `${info[k]} ${info[k] === 1 ? one : many}`);
+        const what = parts.length ? `Everything in it goes: ${andList(parts)}, plus its foundations and Places & Lore.`
+                                  : 'It has no characters, players or stories yet; its foundations and Places & Lore go with it.';
+        const body = el('div', {}, el('input', {class:'cdtype', type:'text', placeholder:`Type ${name} to confirm`, 'aria-label':'Type the world\'s name to confirm', autocomplete:'off'}));
+        const go = await chooseDialog({title:`Delete ${name}?`, cancel:'Keep', body,
+          text:`${what}\n\n${TRASH_NOTE}` + (parts.length ? '\n\nWant to keep a character or player? Export them first from their own pages.' : ''),
+          buttons:[{label:'Delete world', value:'del', danger:true}],
+          onOpen: box => {
+            const inp = box.querySelector('.cdtype'), del = box.querySelector('button.cd-danger');
+            const sync = () => { del.disabled = inp.value.trim().toLowerCase() !== name.trim().toLowerCase(); };
+            inp.oninput = sync; sync();
+            inp.onkeydown = e => { if (e.key === 'Enter' && !del.disabled) del.click(); };
+          }});
+        if (go !== 'del') return;
         const r = await api('/api/delete', {u: uid, kind:'universe'});
         if (r.error) { say(r.error, 'bad'); return; }
         forms = []; location.href = '/start';
@@ -666,9 +697,9 @@ function backgroundCard(kind, id) {
   const pic = el('div', {class:'bgpic'});
   const show = () => { pic.style.backgroundImage = url ? `url("${url}")` : ''; pic.classList.toggle('empty', !url); pic.textContent = url ? '' : 'No background'; };
   const hint = kind === 'world'
-    ? 'Shown behind the chat for every character in this world who has no background of their own.'
+    ? 'Shown on this world\'s card on the start screen, and behind the chat for every character here who has no background of their own.'
     : 'Shown behind the chat with them. Without one, the world\'s background is used (if it has one).';
-  const text = el('div', {class:'ptext'}, el('div', {}, kind === 'world' ? 'Chat background' : 'Chat background'),
+  const text = el('div', {class:'ptext'}, el('div', {}, kind === 'world' ? 'World background' : 'Chat background'),
     el('div', {class:'phint'}, (id || kind === 'world') ? hint + ' Wide pictures work best (e.g. 1920 × 1080). PNG, JPG, WEBP or GIF, up to 15 MB.' : 'Save first, then you can add a background.'));
   const file = el('input', {type:'file', accept:'image/png,image/jpeg,image/webp,image/gif', style:'display:none'});
   const up = el('button', {class:'btn', type:'button', onclick: () => file.click()}, url ? 'Change' : 'Upload');
@@ -770,8 +801,9 @@ async function premisesSection(cid, box) {
     del.onclick = async () => {
       if (f.id.endsWith('/')) { forms = forms.filter(x => x !== f); wrap.remove(); return; }
       const users = used[f.id.split('/')[1]] || [];
-      const warn = users.length ? `\n\nStories using it (${users.join(', ')}) will switch to the default premise.` : '';
-      if (!confirm(`Delete the premise "${title()}"? It goes to the trash folder.${warn}`)) return;
+      const text = (users.length ? `Stories using it (with ${andList(users)}) will switch to the default premise.\n\n` : '') + TRASH_NOTE;
+      if (await chooseDialog({title:`Delete the premise “${title()}”?`, text, cancel:'Keep',
+                              buttons:[{label:'Delete premise', value:'del', danger:true}]}) !== 'del') return;
       const r = await api('/api/delete', {u: uid, kind:'premise', id: f.id});
       if (r.error) { say(r.error, 'bad'); return; }
       forms = forms.filter(x => x !== f); wrap.remove(); say('Premise deleted', 'ok');
@@ -1037,7 +1069,7 @@ async function itemPage({kind, getItems, newLabel, empty, newExtra, after, onFor
                     user: 'Their stories with every character in this world go with them.'}[kind] || '';
       const what = {character:'character', npc:'NPC', user:'player', lore:'entry'}[kind];
       formBox.append(dangerZone(`Delete this ${what}. ${warn}`, `Delete ${what}`, async () => {
-        if (!(await deleteItem(kind, selected, it.label, warn))) return;
+        if (!(await deleteItem(kind, selected, it.label))) return;
         forms.forEach(x => x.changed = false);
         if (single) { location.href = backTo; return; }
         await refreshOverview(); items = getItems();

@@ -1907,6 +1907,7 @@ def api_options():
                           "avatar": avatar_url(u, "character", c["id"])})
         info = universe_info(u)
         out.append({"id": u.id, "name": info["name"], "genre": info["genre"], "characters": chars,
+                    "background": background_url(u, "world", u.id),
                     "users": [{"id": x["id"], "name": x["name"], "avatar": avatar_url(u, "user", x["id"])} for x in list_users(u)]})
     return jsonify({"root": str(ROOT), "universes": out, "selected": state})
 
@@ -2955,6 +2956,35 @@ def to_trash(path, label):
     dest.mkdir(parents=True, exist_ok=True)
     shutil.move(str(path), str(dest / path.name))
     return dest
+
+
+@app.route("/api/delete_info")
+def api_delete_info():
+    """What a delete would take with it, in names, for the confirm dialog."""
+    u, kind, did = get_universe(request.args.get("u")), request.args.get("kind"), request.args.get("id") or ""
+    if not u:
+        return jsonify({"error": "World not found."}), 404
+    users = {x["id"]: x["name"] for x in list_users(u)}
+    chars = list_characters(u)
+    def stories(c):
+        return [p.name[5:] for p in c["folder"].glob("with-*") if (p / "history.json").exists()]
+    if kind == "universe":
+        info = universe_info(u)
+        return jsonify({"name": info["name"], "characters": len(chars), "players": len(users),
+                        "npcs": len(load_npcs(u)), "stories": sum(len(stories(c)) for c in chars)})
+    if kind == "character":
+        c = next((c for c in chars if c["id"] == did), None)
+        if not c:
+            return jsonify({"error": "Character not found."}), 404
+        return jsonify({"name": c["name"], "with": sorted(users.get(x, x.replace("-", " ").title()) for x in stories(c))})
+    if kind == "user":
+        if did not in users:
+            return jsonify({"error": "Player not found."}), 404
+        return jsonify({"name": users[did], "with": sorted(c["name"] for c in chars if did in stories(c))})
+    if kind == "npc":
+        n = next((n for n in load_npcs(u) if n["id"] == Path(did).stem), None)
+        return jsonify({"name": n["name"] if n else did})
+    return jsonify({"name": did})
 
 
 @app.route("/api/delete", methods=["POST"])

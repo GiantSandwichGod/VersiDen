@@ -7,9 +7,13 @@
         width:min(440px, 100%); padding:20px 22px 18px; font:15px/1.5 'Inter', system-ui, sans-serif; }
   .cd h3 { margin:0 0 8px; font-size:17px; font-weight:600; }
   .cd p { margin:0; color:var(--muted); font-size:14px; white-space:pre-line; }
-  .cd .cdb { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; margin-top:18px; }
+  .cd .cdb { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; align-items:center; margin-top:18px; }
   .cd button { background:var(--field); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:9px 14px; cursor:pointer; font:inherit; font-size:14px; }
   .cd button.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  .cd button.cd-danger { background:var(--bad); border-color:var(--bad); color:var(--on-bad, #1a0b0f); font-weight:600; }
+  .cd button:disabled { opacity:.45; cursor:not-allowed; }
+  .cd button.left { margin-right:auto; }
+  .cd input.cdtype { width:100%; margin-top:12px; background:var(--field); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:9px 12px; font:inherit; }
   .pa { display:flex; flex-wrap:wrap; gap:6px 8px; align-items:center; }
   .pa label { flex-basis:100%; color:var(--muted); font-size:12.5px; padding-left:2px; }
   .pa select { flex:1000 1 160px; min-width:0; background:var(--field); color:var(--text); border:1px solid transparent; border-radius:10px;
@@ -21,8 +25,9 @@
   .pa button[hidden] { display:none; }`;
   const tag = document.createElement('style'); tag.textContent = css; document.head.append(tag);
 
-  // buttons: [{label, value, primary}]; resolves with the value, or null for Cancel / Esc / click outside.
-  window.chooseDialog = function ({title, text, body, buttons, wide}) {
+  // buttons: [{label, value, primary, danger, left, action}]; resolves with the value, or null for Cancel / Esc / click outside.
+  // A button with `action` runs it and leaves the dialog open. `cancel` renames the Cancel button.
+  window.chooseDialog = function ({title, text, body, buttons, wide, cancel, onOpen}) {
     return new Promise(resolve => {
       const shade = document.createElement('div'); shade.className = 'cd-shade';
       const box = document.createElement('div'); box.className = 'cd'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true');
@@ -31,10 +36,11 @@
       const row = document.createElement('div'); row.className = 'cdb';
       const done = v => { document.removeEventListener('keydown', esc); shade.remove(); resolve(v); };
       const esc = e => { if (e.key === 'Escape') done(null); };
-      [{label: 'Cancel', value: null}, ...buttons].forEach(b => {
+      const left = buttons.filter(b => b.left), rest = buttons.filter(b => !b.left);
+      [...left, {label: cancel || 'Cancel', value: null}, ...rest].forEach(b => {
         const btn = document.createElement('button'); btn.type = 'button'; btn.textContent = b.label;
-        if (b.primary) btn.className = 'primary';
-        btn.onclick = () => done(b.value); row.append(btn);
+        btn.className = [b.primary && 'primary', b.danger && 'cd-danger', b.left && 'left'].filter(Boolean).join(' ');
+        btn.onclick = () => b.action ? b.action(btn) : done(b.value); row.append(btn);
       });
       box.append(h, p); if (body) box.append(body);
       if (wide) box.style.width = 'min(560px, 100%)';
@@ -43,7 +49,11 @@
       shade.onclick = e => { if (e.target === shade) done(null); };
       document.addEventListener('keydown', esc);
       document.body.append(shade);
-      (row.querySelector('.primary') || row.lastChild).focus();
+      if (onOpen) onOpen(box);
+      // Dangerous choices never get the default focus: Enter on a delete dialog keeps things.
+      const first = box.querySelector('input') || row.querySelector('.primary') ||
+                    [...row.children].find(b => b.textContent === (cancel || 'Cancel')) || row.lastChild;
+      first.focus();
     });
   };
 

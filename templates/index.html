@@ -435,7 +435,8 @@ function startEdit(w) {
   };
 }
 async function del(w) {
-  if (!confirm('Delete this message?')) return;
+  if (await chooseDialog({title:'Delete this message?', text:'This can\'t be undone.', cancel:'Keep',
+                          buttons:[{label:'Delete', value:'del', danger:true}]}) !== 'del') return;
   const r = await post('/api/message/delete', {id: w.dataset.id});
   if (r) { w.remove(); refreshActions(); }
 }

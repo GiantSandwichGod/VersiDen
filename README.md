@@ -150,8 +150,9 @@ Accessibility: High Contrast. The choice is saved per device, so your phone and 
 Every page follows it, including the phone's top bar. Themes live in `static/theme.css`.
 
 **Chat backgrounds:** a picture shown behind the chat. Add one per character (the **Chat
-background** card under their portrait) or for a whole world (under **The basics**); a character
-without their own uses the world's. Wide pictures work best (1920 × 1080), up to 15 MB. **Aa**
+background** card under their portrait) or for a whole world (the **World background** card under
+**The basics**); a character without their own uses the world's. The world's picture also
+decorates its card on the start screen. Wide pictures work best (1920 × 1080), up to 15 MB. **Aa**
 lets you dim it or switch it off. Message bubbles stay solid and the small text sits on frosted
 panels, so it stays readable. Saved in `<world>/backgrounds/`.
 
