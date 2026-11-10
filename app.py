@@ -1254,7 +1254,7 @@ def journal_tokens(s, story=None):
     """What the Journal adds to every reply: location, what they know, the relationship, recent events."""
     story = story or read_story(s)
     sent = story["events"][-(KEY_EVENTS_IN_PROMPT + 8):]
-    return est_tokens("\n".join([story["where"], story["about"], story["relationship"], *sent]))
+    return est_tokens("\n".join([story["where"], story["about"], story["relationship"], *sent, read_story_notes(s)]))
 
 
 def fixed_prompt_tokens(s):
@@ -1496,6 +1496,51 @@ def content_rule(s):
     return rule
 
 
+STORY_NOTES_MAX = 600
+STEER_MAX = 300
+
+
+def notes_path(s):
+    return s.story.with_name("notes.md")
+
+
+def read_story_notes(s):
+    """The player's standing notes for this story ("keep it less flirty"), one per line."""
+    p = notes_path(s)
+    return p.read_text(encoding="utf-8").strip() if p.exists() else ""
+
+
+def write_story_notes(s, text):
+    text = "\n".join(l.strip() for l in (text or "").splitlines() if l.strip())[:STORY_NOTES_MAX]
+    p = notes_path(s)
+    if text:
+        atomic_write(p, text + "\n")
+    elif p.exists():
+        p.unlink()
+    return text
+
+
+def add_story_note(s, note):
+    lines = [l for l in read_story_notes(s).splitlines() if l.strip()]
+    if note.lower() not in (l.lower() for l in lines):
+        lines.append(note)
+    return write_story_notes(s, "\n".join(lines))
+
+
+def steer_lines(s):
+    """The player's direction, from outside the story: standing notes, then a one-off steer for this reply."""
+    out = []
+    notes = read_story_notes(s)
+    if notes:
+        out.append("The player's notes for this story (follow them; they come from outside the story, "
+                   "so never mention them in the reply):\n" + "\n".join(f"- {l}" for l in notes.splitlines()))
+    steer = getattr(s, "steer", "")
+    if steer:
+        out.append(f"For this reply only, the player asks: {steer}. Rewrite the reply to follow this, "
+                   "keeping it in character and in the scene; never mention the request itself.")
+    return out
+
+
 def directive_message(s, name, directive, example=""):
     """A short note placed after the chat history, the last thing the model reads before replying:
     the universe's response style, the flair from Settings, then the character's own directive."""
@@ -1503,7 +1548,8 @@ def directive_message(s, name, directive, example=""):
     flair = FLAIRS.get(story_flair(s), FLAIRS["none"])[1].format(name=name, user=s.user_name)
     fresh = ("Write a new reply to the latest message in this scene. Keep the style sample's form only, "
              "never its events or lines.") if example else ""
-    lines = [x for x in (style, flair, directive, content_rule(s), fresh) if x]
+    # The content rule stays after the player's notes, so a note can never loosen it.
+    lines = [x for x in (style, flair, directive, *steer_lines(s), content_rule(s), fresh) if x]
     if not lines:
         return []
     return [{"role": "system", "content": f"How {name} responds:\n" + "\n".join(lines)}]
@@ -2229,6 +2275,12 @@ def api_reroll():
     s = current_session()
     if not s:
         return no_session()
+    j = request.get_json(silent=True) or {}
+    note = " ".join(str(j.get("note") or "").split())[:STEER_MAX].rstrip(".")
+    if note:
+        s.steer = note
+        if j.get("keep"):
+            add_story_note(s, note)
 
     def work(emit):
         with chat_lock:
@@ -2400,7 +2452,8 @@ def journal_for_ui(s):
     memory = load_json(s.memory, {"summaries": []})
     return {"name": s.name, "user": s.user_name, "tokens": journal_tokens(s, story), "budget": effective_budget(),
             "where": story["where"], "about": story["about"], "relationship": story["relationship"],
-            "events": "\n".join(story["events"]), "npcs": npcs, "summaries": memory["summaries"]}
+            "events": "\n".join(story["events"]), "npcs": npcs, "summaries": memory["summaries"],
+            "notes": read_story_notes(s), "notes_max": STORY_NOTES_MAX}
 
 
 @app.route("/api/journal", methods=["GET", "POST"])
@@ -2415,6 +2468,8 @@ def api_journal():
             write_story(s, {"where": " ".join((j.get("where") or "").split())[:160],
                             "about": (j.get("about") or "").strip(), "relationship": (j.get("relationship") or "").strip(),
                             "events": events})
+            if "notes" in j:
+                write_story_notes(s, j.get("notes"))
             for item in j.get("npcs") or []:
                 npc = find_npc(s.u, item.get("name", ""))
                 if npc:

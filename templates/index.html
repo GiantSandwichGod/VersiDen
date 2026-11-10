@@ -96,6 +96,7 @@
   .chatcol.has-bg .composer { background:color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
                               border-radius:18px; padding:8px 8px 6px; }
   .chatcol.has-bg .acts { background:color-mix(in srgb, var(--bg) 72%, transparent); border-radius:8px; padding:0 6px; width:fit-content; }
+  .chatcol.has-bg .acts:empty { background:none; padding:0; }
   .chatcol.has-bg .m .name { background:color-mix(in srgb, var(--bg) 60%, transparent); border-radius:6px; padding:0 6px; width:fit-content; }
   .bgset { padding:2px 6px 6px; font-size:13px; color:var(--muted); }
   .bgset label { display:flex; align-items:center; gap:8px; cursor:pointer; margin:2px 0 8px; }
@@ -152,6 +153,20 @@
   .edit-box textarea { width:min(700px, 70vw); min-height:110px; background:var(--field); color:var(--text); border:1px solid var(--line-strong); border-radius:14px; padding:10px 12px;
                        font-family:var(--story); font-size:var(--fs); line-height:1.6; resize:vertical; outline:none; }
   .edit-box .row { display:flex; gap:6px; justify-content:flex-end; margin-top:6px; }
+  .steer-box { margin-top:6px; width:min(560px, 80vw); background:var(--card); border:1px solid var(--line-strong); border-radius:16px; padding:10px 12px; }
+  .steer-box > label { display:block; font-size:13.5px; color:var(--muted); margin-bottom:6px; }
+  .steer-chips { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:7px; }
+  .steer-chips button { background:var(--field); color:var(--text); border:1px solid var(--line); border-radius:999px; padding:3px 10px; font:inherit; font-size:12.5px; cursor:pointer; }
+  .steer-chips button:hover { border-color:var(--line-strong); }
+  .steer-chips button, .steer-box .row button { -webkit-tap-highlight-color:transparent; }
+  .steer-box textarea { width:100%; background:var(--field); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:8px 10px; font:inherit; font-size:14px; resize:vertical; outline:none; }
+  .steer-box textarea:focus { border-color:var(--line-strong); }
+  .steer-keep { display:flex; gap:8px; align-items:flex-start; font-size:13px; color:var(--muted); margin:8px 2px 0; cursor:pointer; }
+  .steer-keep input { margin-top:3px; accent-color:var(--accent); }
+  .steer-box .row { display:flex; gap:6px; justify-content:flex-end; margin-top:8px; }
+  .steer-box .row button { background:var(--field); color:var(--text); border:1px solid var(--line); border-radius:9px; padding:6px 13px; cursor:pointer; font:inherit; font-size:13.5px; }
+  .steer-box .row button.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+  @media (pointer: coarse) { .steer-chips button { padding:7px 12px; font-size:13.5px; } .steer-box .row button { padding:9px 15px; } }
   .edit-box button { background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:9px; padding:5px 12px; cursor:pointer; font-size:13.5px; }
   .edit-box button.primary { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
   .note { align-self:center; font-size:14px; color:var(--bad); text-align:center; max-width:640px; }
@@ -409,6 +424,7 @@ function refreshActions() {
         acts.append(btn('›', 'Next version', () => flip(w, m.alt + 1), m.alt >= m.alts - 1));
       }
       acts.append(btn('↻ Reroll', 'Write a new version of this reply (the old one is kept)', reroll));
+      acts.append(btn('✎ Steer', 'Rewrite this reply in a direction you choose, e.g. "less flirty"', () => openSteer(w)));
       acts.classList.add('keep');
     }
     if (isLast && m.role === 'user') { acts.append(btn('↻ Get a reply', `Ask ${people.main} to answer`, reroll)); acts.classList.add('keep'); }
@@ -552,6 +568,40 @@ async function sendMessage() {
   input.focus();
 }
 async function reroll() { if (!busy) await stream('/api/reroll', {}); }
+
+// ✎ Steer: rewrite the last reply with a note from you ("less flirty"). The note never enters the chat.
+const STEER_CHIPS = ['Less flirty', 'Slower, more slow-burn', 'Shorter', 'Longer', 'More dialogue', 'More action', 'Stay in the scene'];
+function openSteer(w) {
+  if (busy || w.querySelector('.steer-box')) return;
+  const box = el('div', 'steer-box');
+  const lbl = el('label', '', 'How should this reply change?');
+  const ta = el('textarea'); ta.rows = 2; ta.maxLength = 300; ta.id = 'steerText'; lbl.htmlFor = 'steerText';
+  ta.placeholder = 'e.g. less flirty, keep it professional';
+  const chips = el('div', 'steer-chips');
+  STEER_CHIPS.forEach(c => {
+    const b = el('button', '', esc(c)); b.type = 'button';
+    b.onclick = () => { const v = ta.value.trim(); ta.value = v ? (v.toLowerCase().includes(c.toLowerCase()) ? v : `${v}, ${c.toLowerCase()}`) : c; ta.focus(); };
+    chips.append(b);
+  });
+  const keepBox = el('input'); keepBox.type = 'checkbox'; keepBox.id = 'steerKeep';
+  const keep = el('label', 'steer-keep'); keep.htmlFor = 'steerKeep';
+  keep.append(keepBox, document.createTextNode(' Keep this for the rest of the story (edit it later in the Journal)'));
+  const row = el('div', 'row');
+  const cancel = el('button', '', 'Cancel'); const go = el('button', 'primary', 'Rewrite');
+  cancel.type = go.type = 'button'; row.append(cancel, go);
+  box.append(lbl, chips, ta, keep, row);
+  w.querySelector('.bubble').after(box); w.classList.add('editing'); refreshActions(); ta.focus();
+  const close = () => { box.remove(); w.classList.remove('editing'); refreshActions(); };
+  cancel.onclick = close;
+  ta.onkeydown = e => { if (e.key === 'Escape') close(); if (e.key === 'Enter' && !e.shiftKey && !TOUCH) { e.preventDefault(); go.click(); } };
+  go.onclick = async () => {
+    const note = ta.value.trim(); if (!note) { ta.focus(); return; }
+    const kept = keepBox.checked; close();
+    await stream('/api/reroll', {note, keep: kept});
+    if (kept) note_(`Saved to Story notes: “${note}”. ${people.main} follows it from now on; change it in the Journal.`);
+  };
+}
+function note_(text) { const n = note(text, 'info'); setTimeout(() => n.remove(), 9000); }
 async function speak(name) { if (!busy) await stream('/api/speak', {speaker:name}); }
 
 send.onclick = sendMessage;
@@ -794,7 +844,10 @@ async function openJournal() {
   const [c1, about] = jcard(`What ${d.name} knows about ${d.user}`, d.about, 5);
   const [c2, rel] = jcard('Where you two stand', d.relationship, 4);
   const [c3, events] = jcard('Key events', d.events, 6, 'One per line, newest at the bottom.');
-  J.append(c0, c1, c2, c3);
+  const [c4, notes] = jcard('Story notes', d.notes, 3,
+    `Your directions for this story, one per line (e.g. “keep it slow-burn”). Sent with every reply; ${d.name} follows them but never mentions them. ✎ Steer can add to this.`);
+  notes.maxLength = d.notes_max || 600; notes.placeholder = 'Nothing yet';
+  J.append(c0, c4, c1, c2, c3);
   const npcInputs = [];
   if (d.npcs.length) {
     J.append(el('p', 'lead', 'Side characters in this story. Dead NPCs no longer speak; change it back to bring them back.'));
@@ -816,7 +869,7 @@ async function openJournal() {
   btns.append(save, upd, stat); J.append(btns);
   if (d.summaries.length) { const c = el('div', 'jcard'); c.append(el('div', 't', 'Earlier conversation, summarised'), el('div', 'summ', esc(d.summaries.join('\n\n')))); J.append(c); }
   save.onclick = async () => {
-    const r = await post('/api/journal', {where: where.value, about: about.value, relationship: rel.value, events: events.value,
+    const r = await post('/api/journal', {where: where.value, notes: notes.value, about: about.value, relationship: rel.value, events: events.value,
       npcs: npcInputs.map(n => ({name:n.name, status:n.st.value, notes:n.nt.value}))});
     if (r) { jDirty = false; jStatus('Saved ✓'); loadPeople(); showWhere(r.where); }
   };

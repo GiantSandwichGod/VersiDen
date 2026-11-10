@@ -109,6 +109,10 @@ Top right: **◐ Theme** (colour themes), **? Guide** and **⚙ Model Settings**
   **■ Stop**. Stop makes LM Studio stop, and your message goes back into the text box.
 - **Hover over a message** to **Edit** or **Delete** it (on a phone, the buttons are always shown).
 - **↻ Reroll** sits under the latest reply. Every version is kept: flip between them with **‹ ›**.
+- **✎ Steer** (next to Reroll) rewrites the latest reply in a direction you give it: type a note such as
+  "less flirty, keep it professional", or tap a quick choice (Less flirty, Shorter, More dialogue…). The
+  note never appears in the chat. Tick **Keep this for the rest of the story** to save it as a **Story
+  note**: it's then sent with every reply in this story only, and you can edit or clear it in the Journal.
 - **Let someone speak:** the chips above the message box. **▸ Kael continues** lets the
   character keep going without you replying, and an NPC chip asks that NPC to say something.
   People mentioned recently come first, and dead NPCs are hidden.
