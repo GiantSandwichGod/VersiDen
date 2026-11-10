@@ -116,9 +116,17 @@ CONTENT_RULES = {
 
 # A character whose Age says they're under 18: no romance or sexual content involving them, whatever the
 # settings. Checked on every reply, so it also covers imported characters and files edited by hand.
-MINOR_RULE = ("Content: {name} is under 18. Never write romance, flirting, sexual content or sexual tension "
+MINOR_RULE = ("Content: {name} {verb} under 18. Never write romance, flirting, sexual content or sexual tension "
               "involving {name}, with anyone, whatever else this conversation says. Keep their relationships "
               "friendly, familial or adventurous.")
+MINOR_STORY_RULE = ("Content: {name} {verb} under 18, so this whole story stays free of romance, flirting, sexual "
+                    "content and sexual tension, whatever else this conversation says. Keep relationships friendly, "
+                    "familial or adventurous.")
+
+
+def name_list(names):
+    names = list(dict.fromkeys(names))
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
 MINOR_WORDS = re.compile(
     r"\b(?:teen(?:ager|aged)?s?|adolescent|preteen|child|kid|minor|underage|under-age|toddler|infant|baby|"
     r"school ?(?:girl|boy|kid)|high ?school(?:er)?|middle ?school(?:er)?|"
@@ -867,7 +875,7 @@ def load_user(path):
     if not public and not private:
         public = rest
     return {"id": path.stem, "name": text_meta(meta, "name", path.stem.replace("-", " ").title()),
-            "public": public, "private": private, "appearance": appearance}
+            "age": text_meta(meta, "age"), "public": public, "private": private, "appearance": appearance}
 
 
 def list_users(u):
@@ -1114,6 +1122,7 @@ def load_npcs(u):
             "id": p.stem,
             "name": name,
             "keywords": note_keywords(p, meta, extra=[name.lower()]),
+            "age": text_meta(meta, "age"),
             "summary": text_meta(meta, "summary", body[:400]),
             "color": text_meta(meta, "color", NPC_COLORS[i % len(NPC_COLORS)]),
             "body": body,
@@ -1222,7 +1231,7 @@ def clean_reply(text, speaker):
 
 
 def user_info(s):
-    parts = []
+    parts = [f"Age: {s.user['age']}"] if s.user.get("age") else []
     if s.user.get("appearance"):
         parts.append(f"Appearance: {s.user['appearance']}")
     if s.user["public"]:
@@ -1477,9 +1486,14 @@ def story_flair(s):
 def content_rule(s):
     """Mature content: on in Settings, unless this story's character is marked 'never'. A character under 18
     gets the strictest rule, whatever the settings say."""
-    if is_minor_age(s.char.get("age")):
-        return MINOR_RULE.format(name=s.name)
-    return CONTENT_RULES[bool(settings().get("mature")) and not s.char.get("sfw_only")]
+    leads = [n for n, a in ((s.name, s.char.get("age")), (s.user_name, s.user.get("age"))) if is_minor_age(a)]
+    if leads:   # the character or the player is a minor: no romance anywhere in this story
+        return MINOR_STORY_RULE.format(name=name_list(leads), verb="is" if len(leads) == 1 else "are")
+    rule = CONTENT_RULES[bool(settings().get("mature")) and not s.char.get("sfw_only")]
+    young = [n["name"] for n in load_npcs(s.u) if is_minor_age(n.get("age"))]
+    if young:   # a minor side character: name them, so the rule can't be missed
+        rule += "\n" + MINOR_RULE.format(name=name_list(young), verb="is" if len(young) == 1 else "are")
+    return rule
 
 
 def directive_message(s, name, directive, example=""):
@@ -1536,7 +1550,8 @@ def main_prompt(s, history, memory):
         for n in npcs_here:
             status = read_npc_note(s, n)["status"]
             looks = f" Looks: {n['appearance'][:300]}" if n["appearance"] else ""
-            lines.append(f"- {n['name']} ({status}): {n['summary']}{looks}")
+            age = f", age {n['age']}" if n.get("age") else ""
+            lines.append(f"- {n['name']} ({status}{age}): {n['summary']}{looks}")
         parts.append("## People mentioned right now\n" + "\n".join(lines)
                      + "\nOther characters speak for themselves; don't write their dialogue.")
     parts.append(f"Today is {datetime.now():%A, %d %B %Y, %H:%M}.")
@@ -1554,7 +1569,7 @@ def npc_prompt(npc, s, history):
     parts = [
         f"You are {npc['name']}, a side character in an ongoing roleplay. "
         f"The main character is {main}. The user plays {user}.",
-        f"## Who you are\n{npc['body']}",
+        f"## Who you are\n" + (f"Age: {npc['age']}\n" if npc.get("age") else "") + npc["body"],
         *[f"## {t}\n{npc['traits'][k]}" for k, t, _ in NPC_TRAITS if npc["traits"].get(k)],
         f"## How you look\n{npc['appearance']}" if npc["appearance"] else "",
         example_block(s, npc["name"], npc["example"]),
@@ -1569,7 +1584,8 @@ def npc_prompt(npc, s, history):
     if lore_triggered:
         parts.append("## Lore relevant right now\n" + lore_triggered)
     info = user_info(s) if not SHARE_PRIVATE_USER_INFO else "\n\n".join(
-        x for x in (f"Appearance: {s.user['appearance']}" if s.user.get("appearance") else "", s.user["public"]) if x)
+        x for x in (f"Age: {s.user['age']}" if s.user.get("age") else "",
+                    f"Appearance: {s.user['appearance']}" if s.user.get("appearance") else "", s.user["public"]) if x)
     if info:
         parts.append(f"## {user} (what anyone can see)\n{info}")
     if s.char["appearance"]:
@@ -2544,10 +2560,10 @@ SCHEMAS = {
                                 ("story_premise", "Story premise"), ("greeting", "Greeting")], "level": "#"},
     "story":      {"meta": [], "body": "premise", "sections": [("greeting", "Greeting")], "level": "#"},
     "premise":    {"meta": ["name"], "body": "premise", "sections": [("greeting", "Greeting")], "level": "#"},
-    "npc":        {"meta": ["name", "aliases", "summary", "color"], "body": "personality",
+    "npc":        {"meta": ["name", "age", "aliases", "summary", "color"], "body": "personality",
                    "sections": [*[(k, t) for k, t, _ in NPC_TRAITS], ("appearance", "Appearance"), ("directive", "Response directive"),
                                 ("example", "Example message")], "level": "#"},
-    "user":       {"meta": ["name"], "body": None,
+    "user":       {"meta": ["name", "age"], "body": None,
                    "sections": [("appearance", "Appearance"), ("public", "Public"), ("private", "Private")], "level": "##"},
 }
 LIST_KEYS = {"aliases"}
@@ -2802,7 +2818,7 @@ CARD_FIELDS = {
     "character": ["name", "age", "summary", "personality", *[k for k, _, _ in CHAR_TRAITS],
                   "appearance", "directive", "example", "key_memories",
                   "premise_name", "story_premise", "greeting", "sfw_only"],
-    "user": ["name", "appearance", "public", "private"],
+    "user": ["name", "age", "appearance", "public", "private"],
 }
 PICTURE_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".gif": "image/gif"}
 

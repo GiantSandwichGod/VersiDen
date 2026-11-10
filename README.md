@@ -370,6 +370,9 @@ Community roleplay fine-tunes on Hugging Face (searchable in LM Studio) are usua
 teenager ("16", "300, looks 15", "a teenager"), they are never part of romantic or mature content,
 whatever the settings. The editor locks their **Never mature content** box, and the app checks
 the Age on every reply, so this also covers imported characters and files edited by hand.
+Players and NPCs have an **Age** field too. If the character or the player is under 18, the whole
+story stays free of romance and mature content; an NPC under 18 is named in the rules so they're
+never part of it.
 
 ## Responsible use
 

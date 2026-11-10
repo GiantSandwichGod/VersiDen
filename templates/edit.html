@@ -242,13 +242,14 @@ const FORMS = {
   ],
   npc: [
     {key:'name', type:'text', label:'Name', half:true},
+    {key:'age', type:'text', label:'Age', half:true, placeholder:'e.g. 52, or "a teenager"'},
     {key:'color', type:'color', label:'Bubble colour', half:true},
-    {key:'aliases', type:'text', label:'Nicknames', placeholder:'comma separated',
+    {key:'aliases', type:'text', label:'Nicknames', placeholder:'comma separated', half:true,
      info:'They are recognised in the chat by their name or any of these.'},
     {key:'summary', type:'card', label:'One-line summary', limit:300, rows:2,
      info:'What other characters know about them at a glance, e.g. "Gruff innkeeper of the Lantern Inn, owes the Saltborn money." Sent to the main character whenever this NPC is mentioned, so keep it short; details go in Personality.'},
     {key:'personality', type:'card', label:'Personality', limit:4500, rows:12,
-     info:'Only this NPC sees this, when they speak: backstory, age, personality, how they talk, what they know.'},
+     info:'Only this NPC sees this, when they speak: backstory, personality, how they talk, what they know.'},
     {key:'flaws', type:'card', label:'Flaws', limit:400, rows:3, optional:true, placeholder:'e.g. Greedy and nosy; can\'t keep a secret.',
      info:'Weaknesses, bad habits and fears.'},
     {key:'motives', type:'card', label:'Motives and beliefs', limit:500, rows:3, optional:true, placeholder:'e.g. Wants to keep the inn afloat; trusts no one from the capital.',
@@ -264,7 +265,8 @@ const FORMS = {
      info:'A short sample of how they write. Style only, never treated as something that happened. {user} = the player\'s name.'},
   ],
   user: [
-    {key:'name', type:'text', label:'Name'},
+    {key:'name', type:'text', label:'Name', half:true},
+    {key:'age', type:'text', label:'Age', half:true, placeholder:'e.g. 28'},
     {key:'appearance', type:'card', label:'Appearance', limit:800, rows:5,
      info:'How you look: build, face, hair, eyes, clothes, anything people would notice. Characters and NPCs see this.'},
     {key:'public', type:'card', label:'Public', limit:1000, rows:7,
@@ -839,6 +841,20 @@ function ageLock(f) {
   apply();
 }
 
+// Players and NPCs: no checkbox to lock, just the note.
+function ageNote(f, kind) {
+  const age = f.inputs.age;
+  if (!age) return;
+  const text = kind === 'user'
+    ? 'Under 18: every story with this player stays free of romance and mature content, whatever the settings.'
+    : 'Under 18: this NPC is never part of romantic or mature content, whatever the settings.';
+  const note = el('small', {class:'agelock'}, text);
+  age.el.append(note);
+  const apply = () => { note.hidden = !isMinorAge(age.get()); };
+  age.input.addEventListener('input', apply);
+  apply();
+}
+
 function sortBar(f) {
   const bar = el('div', {class:'sortbar'});
   const p = el('p'); const btn = el('button', {class:'btn', type:'button'}, 'Sort into sections');
@@ -981,6 +997,7 @@ async function itemPage({kind, getItems, newLabel, empty, newExtra, after, onFor
     };
     forms.push(f);
     if (kind === 'character') { formBox.append(sortBar(f)); ageLock(f); }
+    if (kind === 'user' || kind === 'npc') ageNote(f, kind);
     formBox.append(f.el);
     if (after) await after(isNew ? null : selected, formBox);
     if (!isNew && ['character', 'user'].includes(kind)) {
