@@ -114,6 +114,26 @@ CONTENT_RULES = {
            "doesn't consent.",
 }
 
+# A character whose Age says they're under 18: no romance or sexual content involving them, whatever the
+# settings. Checked on every reply, so it also covers imported characters and files edited by hand.
+MINOR_RULE = ("Content: {name} is under 18. Never write romance, flirting, sexual content or sexual tension "
+              "involving {name}, with anyone, whatever else this conversation says. Keep their relationships "
+              "friendly, familial or adventurous.")
+MINOR_WORDS = re.compile(
+    r"\b(?:teen(?:ager|aged)?s?|adolescent|preteen|child|kid|minor|underage|under-age|toddler|infant|baby|"
+    r"school ?(?:girl|boy|kid)|high ?school(?:er)?|middle ?school(?:er)?|"
+    r"(?<!ty-)(?<!ty )(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen)"
+    r"(?![- ]?(?:hundred|thousand|million))(?:[- ]years?[- ]old)?)\b", re.IGNORECASE)
+
+
+def is_minor_age(age):
+    """True if a character's Age field says (or looks) under 18: '16', '300, looks 15', 'a teenager'."""
+    t = re.sub(r"(?<=\d)[,.' ](?=\d{3}\b)", "", str(age or ""))   # 1,200 -> 1200
+    if any(int(n) < 18 for n in re.findall(r"\d+", t)):
+        return True
+    return bool(MINOR_WORDS.search(t))
+
+
 # "Flair": a one-line style nudge read right before every character/NPC reply.
 FLAIRS = {
     "none":        ("None", "", "No extra style. Just the character's own directive."),
@@ -1455,7 +1475,10 @@ def story_flair(s):
 
 
 def content_rule(s):
-    """Mature content: on in Settings, unless this story's character is marked 'never'."""
+    """Mature content: on in Settings, unless this story's character is marked 'never'. A character under 18
+    gets the strictest rule, whatever the settings say."""
+    if is_minor_age(s.char.get("age")):
+        return MINOR_RULE.format(name=s.name)
     return CONTENT_RULES[bool(settings().get("mature")) and not s.char.get("sfw_only")]
 
 

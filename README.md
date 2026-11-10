@@ -71,6 +71,9 @@ Any name ending in `.localhost` does; change it in `config.toml` (`pc_address`).
 It works while the PC is on and the app is running. The PC itself never asks for the passphrase.
 Changing the passphrase logs all other devices out. Only the PC can change access settings.
 
+**Home network only:** never make VersiDen reachable from the internet (no port forwarding).
+The passphrase is basic protection and the connection isn't encrypted.
+
 ## config.toml
 
 Created on first start, next to `app.py`. Restart the app after editing it.
@@ -362,6 +365,28 @@ keeps their stories non-explicit either way. Anyone under 18 is always off-limit
 The switch only changes the instructions. Whether a model actually writes mature content
 depends on the model: many official models (Qwen included) refuse or fade to black anyway.
 Community roleplay fine-tunes on Hugging Face (searchable in LM Studio) are usually willing.
+
+**Characters under 18.** If a character's **Age** is under 18, or describes them as a child or
+teenager ("16", "300, looks 15", "a teenager"), they are never part of romantic or mature content,
+whatever the settings. The editor locks their **Never mature content** box, and the app checks
+the Age on every reply, so this also covers imported characters and files edited by hand.
+
+## Responsible use
+
+- **Mature content is for adults, between adult characters.** It's off by default; the rules
+  above are built in and not a setting.
+- **Check each model's licence.** What a model may be used for is set by its makers. Some
+  licences forbid mature content outright (Google's Gemma models, for example). VersiDen doesn't
+  ship or recommend a model for any particular use; you choose and run your own.
+- **Home network only.** Phone access is meant for your own Wi-Fi. Never make VersiDen
+  reachable from the internet (no port forwarding or tunnelling tools): the passphrase is basic
+  protection and the connection isn't encrypted.
+- **Your stories are plain files.** Chats, Journals and backups are ordinary text files in
+  `worlds/`. Anyone with access to the PC can read them.
+- **Don't commit your worlds.** `.gitignore` keeps `worlds/`, settings, logs and backups out of
+  Git. If you fork this project, keep it that way, and don't add sample characters, chats or
+  screenshots with explicit content to the repository.
+- **No warranty.** VersiDen is provided as-is under the MIT licence (see `LICENSE`).
 
 ## Lore
 

@@ -149,6 +149,7 @@
     <input type="password" id="passphrase" autocomplete="new-password" placeholder="Passphrase (at least 6 characters)"
       style="width:100%;background:var(--field);color:var(--text);border:0;border-radius:16px;padding:13px 16px;font:inherit;outline:none">
     <p class="hint" id="passHint"></p>
+    <p class="hint" style="color:var(--warn)">Home network only: never make the app reachable from the internet (no port forwarding). The passphrase is basic protection and the connection isn't encrypted.</p>
     <div style="display:flex;gap:10px;align-items:center;margin-top:10px">
       <button class="btn primary" id="saveAccess">Save access</button>
       <span class="status" id="accessStatus"></span>

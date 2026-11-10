@@ -64,6 +64,8 @@
   .section-title + .card.collapsed, .card.collapsed + .card.collapsed { margin-top:-4px; }
   .sortbar { display:flex; gap:12px; align-items:center; background:var(--here-bg); border:1px solid var(--here-line); border-radius:14px; padding:12px 14px; margin:4px 0 14px; }
   .sortbar[hidden] { display:none; }
+  .agelock { color:var(--warn) !important; }
+  .agelock[hidden] { display:none; }
   .sortbar p { flex:1; margin:0; font-size:13.5px; color:var(--here-text); }
   .sortlist { margin:12px 0 0; padding:0; list-style:none; max-height:50vh; overflow:auto; }
   .sortlist li { display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-top:1px solid var(--line); font-size:13.5px; }
@@ -358,7 +360,7 @@ function makeInput(def, value, onChange) {
     const box = el('input', {type:'checkbox'}); box.checked = !!value; box.onchange = onChange;
     const label = el('label', {class:'check'}, box, def.label);
     if (def.hint) label.append(el('small', {}, def.hint));
-    return {el: el('div', {class:'card'}, label), get: () => box.checked};
+    return {el: el('div', {class:'card'}, label), get: () => box.checked, input: box, label};
   }
   const head = el('div', {class:'card-head'});
   if (def.info) head.append(el('span', {class:'info', title:def.info}, 'i'));
@@ -813,6 +815,30 @@ function sortProposal(v) {
 
 const SORT_NAMES = {flaws:'Flaws', motives:'Motives and beliefs', love:'Love and relationships', backstory:'Backstory', skills:'Skills and abilities',
                     daily:'Daily life', people:'People in their life', likes:'Likes and dislikes', appearance:'Appearance', age:'Age', name:'Name'};
+// Under 18 (by the Age field): never in mature or romantic content. The app enforces this on every reply;
+// here the box just shows it. Same check as is_minor_age() in app.py.
+function isMinorAge(age) {
+  const t = String(age || '').replace(/(\d)[,.' ](?=\d{3}\b)/g, '$1');
+  if ((t.match(/\d+/g) || []).some(n => +n < 18)) return true;
+  return /\b(?:teen(?:ager|aged)?s?|adolescent|preteen|child|kid|minor|underage|under-age|toddler|infant|baby|school ?(?:girl|boy|kid)|high ?school(?:er)?|middle ?school(?:er)?|(?<!ty-)(?<!ty )(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen)(?![- ]?(?:hundred|thousand|million))(?:[- ]years?[- ]old)?)\b/i.test(t);
+}
+function ageLock(f) {
+  const age = f.inputs.age, box = f.inputs.sfw_only;
+  if (!age || !box || !box.input) return;
+  const note = el('small', {class:'agelock'}, 'Under 18: this character is never part of romantic or mature content, whatever the settings.');
+  box.label.append(note);
+  let userChoice = box.input.checked;
+  box.input.addEventListener('change', () => { if (!box.input.disabled) userChoice = box.input.checked; });
+  const apply = () => {
+    const minor = isMinorAge(age.get());
+    box.input.disabled = minor;
+    box.input.checked = minor ? true : userChoice;
+    note.hidden = !minor;
+  };
+  age.input.addEventListener('input', apply);
+  apply();
+}
+
 function sortBar(f) {
   const bar = el('div', {class:'sortbar'});
   const p = el('p'); const btn = el('button', {class:'btn', type:'button'}, 'Sort into sections');
@@ -954,7 +980,7 @@ async function itemPage({kind, getItems, newLabel, empty, newExtra, after, onFor
       return ok;
     };
     forms.push(f);
-    if (kind === 'character') formBox.append(sortBar(f));
+    if (kind === 'character') { formBox.append(sortBar(f)); ageLock(f); }
     formBox.append(f.el);
     if (after) await after(isNew ? null : selected, formBox);
     if (!isNew && ['character', 'user'].includes(kind)) {

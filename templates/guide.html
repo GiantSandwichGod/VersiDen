@@ -114,6 +114,7 @@
   <a href="#updating">Updating the app</a>
   <a href="#files">Your files &amp; backups</a>
   <a href="#trouble">Troubleshooting</a>
+  <a href="#responsible">Responsible use</a>
 </nav>
 <main>
   <p class="printonly brandline">{{ app_name }}</p>
@@ -343,6 +344,7 @@
     <li>To make it feel like an app: Safari <b>Share → Add to Home Screen</b> (Android: <b>⋮ → Add to Home screen</b>).</li>
   </ol>
   <p>It works while the PC is on. The PC itself never asks for the passphrase; changing it logs other devices out.</p>
+  <div class="card warn"><b>Home network only.</b> Never make {{ app_name }} reachable from the internet (no port forwarding, no "expose to the web" tools): the passphrase is basic protection and the connection isn't encrypted.</div>
 
   <h2 id="updating">Updating the app</h2>
   <ol>
@@ -382,6 +384,15 @@
     <tr><td>Phone can't connect</td><td>Same Wi-Fi? Restarted after turning access on? Allowed Python through the Windows firewall for <b>Private networks</b>?</td></tr>
   </table>
   <p>Still stuck? Right-click the tray icon → <b>Show log</b>. The last lines usually say what went wrong.</p>
+
+  <h2 id="responsible">Responsible use</h2>
+  <ul>
+    <li><b>Adults only for mature content.</b> Mature content is off by default. When it's on, every reply carries the rule that everyone involved is a consenting adult. A character whose <b>Age</b> is under 18 (or describes them as a child or teenager) is never part of romantic or mature content, whatever the settings; this also applies to imported characters.</li>
+    <li><b>Check each model's licence.</b> What a model may be used for is set by its makers, not by {{ app_name }}. Some licences forbid mature content outright (Google's Gemma models, for example), so read the model's page before using it for that.</li>
+    <li><b>Keep it on your home network.</b> See <a href="#phone">On your phone</a>: never expose the app to the internet.</li>
+    <li><b>Your stories are plain files.</b> Chats, Journals and backups are ordinary text files in the <code>worlds</code> folder. Anyone with access to the PC can read them.</li>
+    <li><b>Sharing characters.</b> Exported characters contain their description, premises and pictures, never your stories. Only share what you'd be happy for others to see, and check characters you import from others.</li>
+  </ul>
 </main>
 </div>
 </body>
