@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="/static/theme.css">
 <script src="/static/theme.js"></script>
 <style>
-  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --text:#f0e9f3; --muted:#ada2b6; --dim:#7b7085;
+  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --text:#f0e9f3; --muted:#ada2b6; --dim:#908699;
           --accent:#b48cf0; --line:#352b3c; --them:#1c1721; --bad:#ec7b8f; --good:#93c9a1; --warn:#e7b860; }
   * { box-sizing:border-box; }
   html, body { height:100%; }
@@ -120,6 +120,7 @@
   .m.user .body { align-items:flex-end; }
   .m .name { font-size:13.5px; color:var(--muted); margin:0 4px 3px; }
   .m.npc .name { color:var(--c); }
+  .m.user .name { width:fit-content; margin-left:auto; text-align:right; }
   .bubble { padding:12px 16px; border-radius:18px; background:var(--them); border:1px solid var(--them-line); overflow-wrap:anywhere;
             font-family:var(--story); font-size:var(--fs); line-height:1.65; max-width:75ch; }   /* ~75 characters per line: easy to read */
   body[data-width="full"] .bubble { max-width:90ch; }
@@ -141,6 +142,12 @@
   @media (hover: none) { .acts { opacity:0; } .m.tapped .acts, .acts.keep { opacity:1; } }   /* phones: tap a message for its buttons */
   .acts button { background:none; border:0; color:var(--dim); cursor:pointer; font-size:13px; padding:2px 7px; border-radius:7px; }
   .acts button:hover { background:var(--card); color:var(--text); }
+  @media (pointer: coarse) {
+    .acts button { padding:8px 11px; font-size:14px; }
+    .kbd-only { display:none; }
+    .status { min-height:36px; min-width:36px; justify-content:center; }
+    #drawer .dlinks a, #drawer .dfoot a { padding-top:10px; padding-bottom:10px; display:inline-block; }
+  }
   .acts .ver { color:var(--dim); font-size:12.5px; font-variant-numeric:tabular-nums; padding:0 2px; }
   .edit-box textarea { width:min(700px, 70vw); min-height:110px; background:var(--field); color:var(--text); border:1px solid var(--line-strong); border-radius:14px; padding:10px 12px;
                        font-family:var(--story); font-size:var(--fs); line-height:1.6; resize:vertical; outline:none; }
@@ -188,8 +195,8 @@
   /* ---- switch drawer (slides in from the left) */
   #drawerShade { position:fixed; inset:0; background:rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .2s; z-index:30; }
   #drawer { position:fixed; top:0; bottom:0; left:0; width:min(340px, 88vw); background:var(--drawer); border-right:1px solid var(--line);
-            transform:translateX(-102%); transition:transform .22s ease; z-index:31; display:flex; flex-direction:column; padding:14px; gap:12px; }
-  body.drawer-open #drawer { transform:none; }
+            transform:translateX(-102%); visibility:hidden; transition:transform .22s ease, visibility 0s linear .22s; z-index:31; display:flex; flex-direction:column; padding:14px; gap:12px; }
+  body.drawer-open #drawer { transform:none; visibility:visible; transition:transform .22s ease, visibility 0s; }
   body.drawer-open #drawerShade { opacity:1; pointer-events:auto; }
   #drawer .dhead { display:flex; align-items:center; }
   #drawer .dhead b { flex:1; font-size:17px; font-weight:600; }
@@ -297,10 +304,10 @@
 
 <div id="drawerShade"></div>
 <nav id="drawer" aria-label="Switch story">
-  <div class="dhead"><a class="dbrand" href="/start" title="VersiDen home"><img src="/static/icons/logo.svg" alt="">VersiDen</a><button class="hbtn" id="drawerClose" title="Close (Esc)">✕</button></div>
+  <div class="dhead"><a class="dbrand" href="/start" title="VersiDen home"><img src="/static/icons/logo.svg" alt="">VersiDen</a><button class="hbtn" id="drawerClose" title="Close (Esc)" aria-label="Close">✕</button></div>
   <div class="dsub">Switch story</div>
   <div class="dtop">
-    <select id="dUni" title="World"></select>
+    <select id="dUni" title="World" aria-label="World"></select>
     <div class="dlinks"><a id="dEdit" href="#" title="Foundations, Places & Lore, NPCs">✎ Edit world</a><a href="/edit">+ New world</a></div>
   </div>
   <div class="dlabel">Characters</div>
@@ -323,7 +330,7 @@
         <textarea id="input" rows="1" placeholder="Message {{ name }}…"></textarea>
         <button id="send">Send</button>
       </div>
-      <div class="hint">Enter to send · Shift+Enter for a new line · *asterisks* for actions · type @ to talk to someone else</div>
+      <div class="hint" id="composerHint"><span class="kbd-only">Enter to send · Shift+Enter for a new line · </span>*asterisks* for actions · type @ to talk to someone else</div>
     </div>
   </div>
   <aside id="journal"></aside>
@@ -376,6 +383,7 @@ function addMessage(m) {
   else if (m.avatar) w.append(avatar(m.avatar, m.speaker));
   const body = el('div', 'body');
   if (m.role === 'assistant') body.append(el('div', 'name', esc(m.speaker)));
+  else if (m.role === 'user') body.append(el('div', 'name', esc(m.speaker || people.user || '')));
   const b = el('div', 'bubble', render(m.content || ''));
   b.addEventListener('click', () => {     // phones: tap a message to show its Edit / Delete
     if (!matchMedia('(hover: none)').matches) return;
@@ -528,8 +536,17 @@ async function stream(url, body, ctx = {}) {
 async function sendMessage() {
   if (busy) { stopGenerating(); return; }
   const text = input.value.trim(); if (!text) return;
+  if (status && !status.ok) {          // known offline: check once more, and keep their text if it still is
+    await checkStatus();
+    if (status && !status.ok) {
+      chat.querySelectorAll('.note.offline').forEach(n => n.remove());
+      note("LM Studio isn't running, so nobody can answer yet. Start it (or its Local LLM Service); your message is still in the box, so just press Send again.", 'offline');
+      return;
+    }
+  }
+  chat.querySelectorAll('.note.offline').forEach(n => n.remove());
   input.value = ''; autoGrow(); closeAt();
-  const userBubble = addMessage({role:'user', content:text, speaker:people.user}); toBottom(true);
+  const userBubble = addMessage({role:'user', content:text, speaker:people.user, avatar:people.user_avatar}); toBottom(true);
   await stream('/api/send', {message:text}, {userBubble});
   input.focus();
 }
@@ -537,9 +554,15 @@ async function reroll() { if (!busy) await stream('/api/reroll', {}); }
 async function speak(name) { if (!busy) await stream('/api/speak', {speaker:name}); }
 
 send.onclick = sendMessage;
+// Phones and tablets: Enter makes a new line (no easy Shift on a phone keyboard); the Send button sends.
+const TOUCH = matchMedia('(pointer: coarse)').matches;
+if (TOUCH) input.enterKeyHint = 'enter';
+// Short placeholder on narrow screens so it doesn't wrap and get cut off
+function fitPlaceholder() { input.placeholder = innerWidth < 600 ? 'Message…' : input.dataset.full; }
+input.dataset.full = input.placeholder; fitPlaceholder(); addEventListener('resize', fitPlaceholder);
 input.addEventListener('keydown', e => {
   if (atOpen() && ['ArrowDown','ArrowUp','Enter','Tab','Escape'].includes(e.key)) return atKey(e);
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!busy) sendMessage(); }
+  if (e.key === 'Enter' && !e.shiftKey && !TOUCH) { e.preventDefault(); if (!busy) sendMessage(); }
 });
 function autoGrow() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 180) + 'px'; }
 input.addEventListener('input', () => { autoGrow(); updateAt(); });
@@ -749,7 +772,7 @@ async function refreshWhere() {
 const J = $('journal'); let jDirty = false;
 function jcard(title, value, rows, sub) {
   const c = el('div', 'jcard'); c.append(el('div', 't', esc(title)));
-  const ta = el('textarea'); ta.rows = rows; ta.value = value || ''; ta.oninput = () => { jDirty = true; jStatus('Unsaved changes'); };
+  const ta = el('textarea'); ta.rows = rows; ta.value = value || ''; ta.setAttribute('aria-label', title); ta.oninput = () => { jDirty = true; jStatus('Unsaved changes'); };
   c.append(ta); if (sub) c.append(el('div', 'sub', esc(sub))); return [c, ta];
 }
 function jStatus(t) { const s = J.querySelector('#jstat'); if (s) s.textContent = t; }
@@ -776,12 +799,12 @@ async function openJournal() {
     J.append(el('p', 'lead', 'Side characters in this story. Dead NPCs no longer speak; change it back to bring them back.'));
     d.npcs.forEach(n => {
       const c = el('div', 'jcard'); const t = el('div', 't'); t.append(avatar(n.avatar, n.name, n.color, true), document.createTextNode(n.name)); c.append(t);
-      const st = el('select', 'npcst'); st.title = `${n.name}'s status`;
+      const st = el('select', 'npcst'); st.title = `${n.name}'s status`; st.setAttribute('aria-label', `${n.name}'s status`);
       [['alive', 'Alive'], ['injured', 'Injured'], ['missing', 'Missing'], ['away', 'Away (left the scene)'], ['dead', 'Dead']]
         .forEach(([v, t]) => st.append(new Option(t, v)));
       st.value = n.status;
       t.append(st);
-      const nt = el('textarea'); nt.rows = 3; nt.value = n.notes;
+      const nt = el('textarea'); nt.rows = 3; nt.value = n.notes; nt.setAttribute('aria-label', `${n.name}'s notes`);
       nt.placeholder = `How ${n.name} feels about ${d.name} and ${d.user}, what they know or want, grudges and promises.`;
       [st, nt].forEach(i => { i.oninput = i.onchange = () => { jDirty = true; jStatus('Unsaved changes'); }; });
       c.append(nt, el('div', 'sub', `${n.name}'s own view. Shared events go in Key events above.`)); J.append(c); npcInputs.push({name:n.name, st, nt});
@@ -819,8 +842,14 @@ async function openDrawer() {
   sel.value = options.selected.universe || (options.universes[0] || {}).id || '';
   renderDrawer();
   document.body.classList.add('drawer-open');
+  setTimeout(() => $('drawerClose').focus({preventScroll:true}), 50);
 }
-function closeDrawer() { document.body.classList.remove('drawer-open'); }
+function closeDrawer() {
+  if (!document.body.classList.contains('drawer-open')) return;
+  const inside = $('drawer').contains(document.activeElement);
+  document.body.classList.remove('drawer-open');
+  if (inside) $('switchBtn').focus({preventScroll:true});
+}
 function renderDrawer() {
   const u = options.universes.find(x => x.id === $('dUni').value), box = $('dChars'); box.innerHTML = '';
   if (!u) return;

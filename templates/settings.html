@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="/static/theme.css">
 <script src="/static/theme.js"></script>
 <style>
-  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --text:#f0e9f3; --muted:#ada2b6; --dim:#7b7085;
+  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --text:#f0e9f3; --muted:#ada2b6; --dim:#908699;
           --accent:#b48cf0; --line:#352b3c; --bad:#ec7b8f; --good:#93c9a1; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font:15px/1.55 'Inter', system-ui, sans-serif; }
@@ -28,6 +28,11 @@
   .section-title { text-align:center; color:var(--muted); font-size:14px; margin:26px 0 12px; }
   .card { background:var(--card); border-radius:22px; padding:14px 16px 16px; margin-bottom:14px; }
   .card-head { display:flex; align-items:center; gap:8px; margin:0 4px 10px; font-size:14px; }
+  .card-head button.info { background:none; padding:0; font-family:inherit; line-height:1; cursor:pointer; }
+  .card-head button.info[aria-expanded=true] { color:var(--text); border-color:var(--text); }
+  .tipbox { margin:-4px 4px 10px; padding:9px 12px; border-radius:12px; background:var(--field); color:var(--muted); font-size:13.5px; line-height:1.45; }
+  .tipbox[hidden] { display:none; }
+  @media (pointer: coarse) { .card-head .info { width:26px !important; height:26px !important; font-size:12px !important; } }
   .card-head .info { width:16px; height:16px; border:1.4px solid var(--muted); border-radius:50%; display:inline-flex; align-items:center;
                      justify-content:center; font-size:10px; font-weight:700; color:var(--muted); cursor:help; flex-shrink:0; }
   .card-head .grow { flex:1; }
@@ -58,7 +63,8 @@
   #reasoningCard.unsupported input[type=range], #reasoningCard.unsupported .scale, #reasoningCard.unsupported #reasoningAbout { opacity:.35; }
   #reasoningCard.unsupported .def { pointer-events:none; opacity:.35; }
   .test { background:var(--field); border-radius:16px; padding:12px 16px; margin-top:10px; font-size:14px; display:none; white-space:pre-wrap; }
-  @media (pointer: coarse) { input, textarea, select { font-size:16px !important; } }
+  @media (pointer: coarse) { input, textarea, select { font-size:16px !important; }
+    .top a { display:inline-block; padding:10px 4px; } }
 </style>
 </head>
 <body>
@@ -343,6 +349,21 @@ $('test').onclick = async () => {
   if (j.error) { out.className = 'test bad'; out.textContent = j.error; }
   else out.textContent = `${j.model} · ${j.format} · ${j.seconds}s\n\n“${j.reply}”`;
 };
+
+// Field tips open on tap or click (not only mouse hover), and each control is named by its heading.
+document.querySelectorAll('.card').forEach((c, i) => {
+  const head = c.querySelector('.card-head'); if (!head) return;
+  const g = head.querySelector('.grow');
+  const f = c.querySelector('select, input[type=range], input[type=text], input[type=number], textarea');
+  if (g && f && !(f.labels && f.labels.length)) { g.id = g.id || 'lbl-' + i; f.setAttribute('aria-labelledby', g.id); }
+  const info = head.querySelector('span.info'); if (!info) return;
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'info'; b.textContent = 'i';
+  b.title = info.title; b.setAttribute('aria-expanded', 'false');
+  b.setAttribute('aria-label', 'About ' + (g ? g.textContent.split('·')[0].trim() : 'this setting'));
+  const tip = document.createElement('div'); tip.className = 'tipbox'; tip.hidden = true; tip.textContent = info.title;
+  b.onclick = () => { tip.hidden = !tip.hidden; b.setAttribute('aria-expanded', String(!tip.hidden)); };
+  info.replaceWith(b); head.after(tip);
+});
 </script>
 </body>
 </html>

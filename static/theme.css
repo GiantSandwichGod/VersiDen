@@ -4,7 +4,7 @@
 
 :root {
   color-scheme: dark;
-  --bg:#121015; --card:#1c1721; --field:#261f2c; --line:#352b3c; --text:#f0e9f3; --muted:#ada2b6; --dim:#7b7085;
+  --bg:#121015; --card:#1c1721; --field:#261f2c; --line:#352b3c; --text:#f0e9f3; --muted:#ada2b6; --dim:#908699;
   --accent:#b48cf0; --on-accent:#170c24; --bubble:#4b2e66; --bubble-text:#f6eefc;
   --good:#93c9a1; --warn:#e7b860; --bad:#ec7b8f;
   /* hand-tuned extras for Dusk Grove */
@@ -42,25 +42,25 @@
 }
 
 /* ---------- dark themes */
-:root[data-theme="ember"]   { --bg:#14100d; --card:#211912; --field:#2b2118; --line:#3a2d22; --text:#f4ebe1; --muted:#b8a593; --dim:#8a7863;
+:root[data-theme="ember"]   { --bg:#14100d; --card:#211912; --field:#2b2118; --line:#3a2d22; --text:#f4ebe1; --muted:#b8a593; --dim:#9a8976;
   --accent:#e8a15c; --on-accent:#24140a; --bubble:#5c3620; --bubble-text:#fbf1e6; --good:#9ccf9a; --warn:#e8c15c; --bad:#ee8270; }
-:root[data-theme="sea"]     { --bg:#0c1217; --card:#151e26; --field:#1c2731; --line:#263541; --text:#e6eff4; --muted:#9fb2bf; --dim:#71848f;
+:root[data-theme="sea"]     { --bg:#0c1217; --card:#151e26; --field:#1c2731; --line:#263541; --text:#e6eff4; --muted:#9fb2bf; --dim:#7f919b;
   --accent:#7cc4e0; --on-accent:#06202c; --bubble:#1f4560; --bubble-text:#eef8fd; --good:#8fd1a8; --warn:#e9c46a; --bad:#f08a8a; }
-:root[data-theme="verdant"] { --bg:#0e130f; --card:#172019; --field:#1e2920; --line:#2a372b; --text:#e8f0e6; --muted:#a3b5a0; --dim:#748772;
+:root[data-theme="verdant"] { --bg:#0e130f; --card:#172019; --field:#1e2920; --line:#2a372b; --text:#e8f0e6; --muted:#a3b5a0; --dim:#81937f;
   --accent:#8fcf8a; --on-accent:#0d230f; --bubble:#2c4c2e; --bubble-text:#eef8ec; --good:#a6dba0; --warn:#e3c169; --bad:#ef8a7f; }
-:root[data-theme="crimson"] { --bg:#140b0e; --card:#22131a; --field:#2c1921; --line:#3d222d; --text:#f4e6ea; --muted:#bfa0aa; --dim:#8e717b;
+:root[data-theme="crimson"] { --bg:#140b0e; --card:#22131a; --field:#2c1921; --line:#3d222d; --text:#f4e6ea; --muted:#bfa0aa; --dim:#9b8089;
   --accent:#e57a92; --on-accent:#2a0b14; --bubble:#5c1f33; --bubble-text:#fcecf0; --good:#96cfa3; --warn:#e9bd62; --bad:#ff9b8a; }
-:root[data-theme="starfall"]{ --bg:#0a0e1a; --card:#131a2b; --field:#1a2338; --line:#253049; --text:#e4ecff; --muted:#9aa6c4; --dim:#6e7a98;
+:root[data-theme="starfall"]{ --bg:#0a0e1a; --card:#131a2b; --field:#1a2338; --line:#253049; --text:#e4ecff; --muted:#9aa6c4; --dim:#818ca8;
   --accent:#5fd3e6; --on-accent:#05222a; --bubble:#1d3557; --bubble-text:#eef6ff; --good:#8fd6a6; --warn:#f0c674; --bad:#f28b9b; }
-:root[data-theme="neon"]    { --bg:#0b0a10; --card:#16141f; --field:#1e1b2a; --line:#2b2739; --text:#efeaf7; --muted:#a39bb6; --dim:#766e8a;
+:root[data-theme="neon"]    { --bg:#0b0a10; --card:#16141f; --field:#1e1b2a; --line:#2b2739; --text:#efeaf7; --muted:#a39bb6; --dim:#89829b;
   --accent:#ff4fd8; --on-accent:#2a0624; --bubble:#3d1748; --bubble-text:#fbeefa; --good:#7ee0b0; --warn:#ffd166; --bad:#ff6b8b; }
-:root[data-theme="frost"]   { --bg:#0f1419; --card:#18212a; --field:#202b36; --line:#2c3946; --text:#e9f1f7; --muted:#a5b4c2; --dim:#768592;
+:root[data-theme="frost"]   { --bg:#0f1419; --card:#18212a; --field:#202b36; --line:#2c3946; --text:#e9f1f7; --muted:#a5b4c2; --dim:#8694a0;
   --accent:#a9d6ff; --on-accent:#0c2236; --bubble:#2a3f55; --bubble-text:#f1f8ff; --good:#9fd8b4; --warn:#ecc879; --bad:#f29a9a; }
-:root[data-theme="desert"]  { --bg:#15110b; --card:#221b11; --field:#2c2317; --line:#3c3020; --text:#f6ecda; --muted:#bba98c; --dim:#8b795c;
+:root[data-theme="desert"]  { --bg:#15110b; --card:#221b11; --field:#2c2317; --line:#3c3020; --text:#f6ecda; --muted:#bba98c; --dim:#9b8a6f;
   --accent:#e3c06b; --on-accent:#2a1f05; --bubble:#5b4320; --bubble-text:#fdf4e2; --good:#a8d49a; --warn:#f0b860; --bad:#ee8a72; }
-:root[data-theme="eldritch"]{ --bg:#0b0d0a; --card:#141812; --field:#1b2018; --line:#262d22; --text:#e3e8dc; --muted:#9aa391; --dim:#6e7765;
+:root[data-theme="eldritch"]{ --bg:#0b0d0a; --card:#141812; --field:#1b2018; --line:#262d22; --text:#e3e8dc; --muted:#9aa391; --dim:#828a79;
   --accent:#b5d65a; --on-accent:#18230a; --bubble:#2c3a1f; --bubble-text:#eef5e4; --good:#9fd8a0; --warn:#e6c35c; --bad:#e8826f; }
-:root[data-theme="ink"]     { --bg:#000000; --card:#111111; --field:#1a1a1a; --line:#262626; --text:#ededed; --muted:#9a9a9a; --dim:#717171;
+:root[data-theme="ink"]     { --bg:#000000; --card:#111111; --field:#1a1a1a; --line:#262626; --text:#ededed; --muted:#9a9a9a; --dim:#848484;
   --accent:#d9d9d9; --on-accent:#111111; --bubble:#2a2a2a; --bubble-text:#f5f5f5; --good:#8fd19e; --warn:#e6c068; --bad:#f08080; }
 
 /* ---------- light themes */
@@ -76,11 +76,11 @@
   --danger-line: color-mix(in srgb, var(--bad) 35%, var(--card));
   --danger-btn: color-mix(in srgb, var(--bad) 50%, var(--card));
 }
-:root[data-theme="parchment"] { --bg:#f4eee3; --card:#fffaf1; --field:#efe6d6; --line:#e0d4bf; --text:#2b241c; --muted:#665a4b; --dim:#7a6d5b;
+:root[data-theme="parchment"] { --bg:#f4eee3; --card:#fffaf1; --field:#efe6d6; --line:#e0d4bf; --text:#2b241c; --muted:#665a4b; --dim:#716453;
   --accent:#8a5a2b; --on-accent:#fffaf1; --bubble:#e7d9c2; --bubble-text:#2b241c; --good:#2f7a45; --warn:#8a5d00; --bad:#b4413a; }
-:root[data-theme="sakura"]    { --bg:#fbf3f5; --card:#ffffff; --field:#f6e8ed; --line:#ecd6de; --text:#3a2730; --muted:#6e5763; --dim:#83707a;
+:root[data-theme="sakura"]    { --bg:#fbf3f5; --card:#ffffff; --field:#f6e8ed; --line:#ecd6de; --text:#3a2730; --muted:#6e5763; --dim:#77646e;
   --accent:#b54a72; --on-accent:#ffffff; --bubble:#f3dbe4; --bubble-text:#3a2730; --good:#2f7a4f; --warn:#8a5d00; --bad:#b83a4f; }
-:root[data-theme="mist"]      { --bg:#eef2f5; --card:#ffffff; --field:#e5ebf0; --line:#d6dee5; --text:#1f2a33; --muted:#53616c; --dim:#6b7883;
+:root[data-theme="mist"]      { --bg:#eef2f5; --card:#ffffff; --field:#e5ebf0; --line:#d6dee5; --text:#1f2a33; --muted:#53616c; --dim:#5d6a75;
   --accent:#356f94; --on-accent:#ffffff; --bubble:#d9e6ef; --bubble-text:#1f2a33; --good:#2d7a4c; --warn:#8a5d00; --bad:#b23b3b; }
 
 /* ---------- accessibility */

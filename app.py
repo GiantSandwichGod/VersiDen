@@ -1711,7 +1711,7 @@ def speaker_card(name, s):
 
 
 def lmstudio_error(e):
-    return jsonify({"error": f"Couldn't reach LM Studio: {e}. Is the server running and a model loaded?"}), 502
+    return jsonify({"error": lm_error_text(e)}), 502
 
 
 def no_session():
@@ -2025,8 +2025,23 @@ def stream_reply(emit, speaker, s, history, memory):
     return msg
 
 
-def lm_error_text(e):
-    return f"Couldn't reach LM Studio: {e}. Is the server running and a model loaded?"
+def lm_error_text(e, then="then try again."):
+    """A plain-words message for the chat; the technical detail goes to the log."""
+    print(f"LM Studio error: {e}", flush=True)
+    if isinstance(e, requests.ConnectionError):
+        return f"LM Studio isn't running, or its server is switched off. Start it (or its Local LLM Service), {then}"
+    if isinstance(e, requests.Timeout):
+        return f"LM Studio took too long to answer. The model may still be loading; wait a moment, {then}"
+    detail = ""
+    resp = getattr(e, "response", None)
+    if resp is not None:
+        try:
+            j = resp.json(); err = j.get("error")
+            detail = (err.get("message") if isinstance(err, dict) else err) or ""
+        except ValueError:
+            detail = (resp.text or "")[:200]
+    detail = str(detail).strip()
+    return ("LM Studio couldn't answer" + (f": {detail[:200]}" if detail else ". Check that a model is loaded") + f". {then[0].upper()}{then[1:]}")
 
 
 def npc_round(emit, s, history, memory, last_user):
@@ -2079,7 +2094,8 @@ def api_people():
                      "keywords": sorted(n["keywords"]), "recent": mentions(n["keywords"], recent)})
     npcs.sort(key=lambda n: not n["recent"])   # people in the current scene first
     return jsonify({"main": s.name, "user": s.user_name, "npcs": npcs,
-                    "main_avatar": avatar_url(s.u, "character", s.char["id"])})
+                    "main_avatar": avatar_url(s.u, "character", s.char["id"]),
+                    "user_avatar": avatar_url(s.u, "user", s.user["id"])})
 
 
 @app.route("/api/send", methods=["POST"])
@@ -2526,7 +2542,7 @@ def api_models():
     try:
         return jsonify({"models": list_models()})
     except (requests.RequestException, ValueError) as e:
-        return jsonify({"error": f"Couldn't reach LM Studio: {e}", "models": []}), 502
+        return jsonify({"error": lm_error_text(e, "then press Test model."), "models": []}), 502
 
 
 @app.route("/api/test_model", methods=["POST"])
@@ -2536,7 +2552,7 @@ def api_test_model():
         reply = call_llm([{"role": "system", "content": "You are a friendly tavern keeper. Reply in one short sentence."},
                           {"role": "user", "content": "Hello! Is the kitchen still open?"}], max_tokens=150, think=True)
     except requests.RequestException as e:
-        return jsonify({"error": f"Couldn't reach LM Studio or the model failed: {e}"}), 502
+        return jsonify({"error": lm_error_text(e, "then press Test model again.")}), 502
     except GibberishReply as e:
         return jsonify({"error": e.text}), 502
     except EmptyReply:

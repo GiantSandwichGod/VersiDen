@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="/static/theme.css">
 <script src="/static/theme.js"></script>
 <style>
-  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --accent:#b48cf0; --text:#f0e9f3; --muted:#ada2b6; --dim:#7b7085; --line:#352b3c;
+  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --accent:#b48cf0; --text:#f0e9f3; --muted:#ada2b6; --dim:#908699; --line:#352b3c;
           --good:#93c9a1; --warn:#e7b860; --bad:#ec7b8f; }
   * { box-sizing:border-box; }
   html { scroll-behavior:smooth; scroll-padding-top:70px; }
@@ -82,6 +82,7 @@
     .dot { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   }
   @media (max-width: 560px) { .top .full { display:none; } .top a { margin-left:12px; } }
+  @media (pointer: coarse) { .top a { display:inline-block; padding:10px 4px; } }
   @media screen and (max-width: 700px) {
     table { display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; max-width:100%; }
   }

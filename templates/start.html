@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="/static/theme.css">
 <script src="/static/theme.js"></script>
 <style>
-  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --accent:#b48cf0; --text:#f0e9f3; --muted:#ada2b6; --dim:#7b7085; --line:#352b3c; }
+  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --accent:#b48cf0; --text:#f0e9f3; --muted:#ada2b6; --dim:#908699; --line:#352b3c; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 'Inter', system-ui, sans-serif; display:flex; justify-content:center; padding:44px 20px; }
   main { width:100%; max-width:860px; }
@@ -31,14 +31,14 @@
   .unis { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:10px; }
   .uni { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px 16px; cursor:pointer; position:relative; min-height:82px; }
   .uni.on { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent) inset; }
-  .uni b { display:block; font-weight:600; padding-right:60px; }
+  .uni b { display:block; font-weight:600; padding-right:72px; overflow-wrap:anywhere; }
   .uni span { color:var(--muted); font-size:13px; }
   .uni .edit { position:absolute; top:11px; right:11px; color:var(--muted); font-size:12.5px; text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:2px 8px; }
   .uni .edit:hover { color:var(--text); }
   .uni.add { border-style:dashed; color:var(--muted); display:flex; align-items:center; justify-content:center; text-decoration:none; }
   .chars { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:12px; }
   .char { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:16px; }
-  .char .head { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+  .char .head { display:flex; align-items:flex-start; gap:12px; margin-bottom:12px; }
   .char .head b { font-size:16px; font-weight:600; }
   .av { width:46px; height:46px; border-radius:50%; object-fit:cover; display:inline-flex; align-items:center; justify-content:center; font-weight:600; color:white; background:var(--avatar); flex-shrink:0; }
   .plays { display:flex; flex-direction:column; gap:6px; }
@@ -50,7 +50,10 @@
   .char { position:relative; }
   .char .cedit { position:absolute; top:14px; right:14px; color:var(--muted); font-size:12.5px; text-decoration:none; border:1px solid var(--line); border-radius:8px; padding:2px 8px; }
   .char .cedit:hover { color:var(--text); }
-  .char .head b { padding-right:56px; }
+  .char .head b { padding-right:74px; overflow-wrap:anywhere; }
+  /* Same-height cards in a row: keep "Play as" and the button at the bottom */
+  .char:not(.add) { display:flex; flex-direction:column; }
+  .char:not(.add) > :last-child { margin-top:auto; }
   .divider { border:0; border-top:1px solid var(--line); margin:30px 0 4px; }
   .char.add { border-style:dashed; color:var(--muted); display:flex; align-items:center; justify-content:center; min-height:96px; text-decoration:none; font-size:14px; }
   .char.add:hover, .pchip.add:hover { color:var(--text); }
@@ -70,15 +73,22 @@
   .none { color:var(--muted); font-size:14px; }
   @media (max-width: 560px) { .linkbtn .long { display:none; } .char.add { min-height:64px; } }
   .none a { color:var(--text); }
+  .lmwarn { margin-top:18px; padding:10px 14px; border:1px solid color-mix(in srgb, var(--warn) 45%, transparent); border-radius:12px;
+            background:color-mix(in srgb, var(--warn) 10%, transparent); color:var(--text); font-size:14px; line-height:1.45; }
+  .lmwarn b { color:var(--warn); font-weight:600; }
+  .lmwarn a { color:var(--text); }
   .error { color:var(--bad); font-size:14px; margin-top:12px; }
-  @media (pointer: coarse) { input, textarea, select { font-size:16px !important; } }
-  .char .head b .sum { display:block; font-weight:400; font-size:13px; color:var(--muted); margin-top:2px; line-height:1.35; }
+  @media (pointer: coarse) { input, textarea, select { font-size:16px !important; }
+    .uni .edit, .char .cedit { padding:7px 11px; } .char .head b { padding-right:84px; } .char .head b .sum { margin-right:-84px; } }
+  .char .head b .sum { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden;
+                       font-weight:400; font-size:13px; color:var(--muted); margin-top:2px; line-height:1.35; margin-right:-74px; }
 </style>
 </head>
 <body>
 <main>
   <div class="top" style="align-items:flex-start"><div><div class="brand"><img src="/static/icons/logo.svg" alt="">VersiDen</div><h1>Choose your story</h1></div><span class="toplinks"><button type="button" id="themeBtn" aria-haspopup="true" aria-expanded="false">◐ Theme</button><a href="/guide">? Guide</a><a href="/settings">⚙ Model Settings</a>
     <div id="themePop" hidden></div></span></div>
+  <div class="lmwarn" id="lmwarn" hidden><b>LM Studio isn't running yet.</b> You can set up worlds and characters now, but start LM Studio (or its Local LLM Service) before you chat. <a href="/guide">Setup help</a></div>
   <h2>World</h2>
   <div class="unis" id="unis"></div>
   <div id="inside"></div>
@@ -128,7 +138,7 @@ function render() {
     const card = document.createElement('div'); card.className = 'char';
     const head = document.createElement('div'); head.className = 'head'; head.append(avatar(c.avatar, c.name));
     const nm = document.createElement('b'); nm.textContent = c.name;
-    if (c.summary) { const sm = document.createElement('small'); sm.className = 'sum'; sm.textContent = c.summary; nm.append(sm); }
+    if (c.summary) { const sm = document.createElement('small'); sm.className = 'sum'; sm.textContent = c.summary; sm.title = c.summary; nm.append(sm); }
     head.append(nm); card.append(head);
     const ed = document.createElement('a'); ed.className = 'cedit'; ed.href = editUrl('character', c.id); ed.textContent = '✎ Edit';
     ed.title = `Edit ${c.name}: personality, appearance, premises, portrait`; card.append(ed);
@@ -139,7 +149,7 @@ function render() {
   const addC = document.createElement('a'); addC.className = 'char add'; addC.href = editUrl('character'); addC.textContent = '+ New character';
   grid.append(addC);
 
-  const h = document.createElement('h2'); h.textContent = 'Players: who you play as in ' + u.name + ' (click to edit)'; box.append(h);
+  const h = document.createElement('h2'); h.textContent = 'Players: who you play as in ' + u.name; box.append(h);
   const players = document.createElement('div'); players.className = 'players'; box.append(players);
   u.users.forEach(p => {
     const a = document.createElement('a'); a.className = 'pchip'; a.href = editUrl('user', p.id); a.title = `Edit ${p.name}`;
@@ -160,6 +170,11 @@ async function go(universe, character, user) {
 async function begin(universe, character, user) {
   if (await setTheScene({universe, character, user})) location.href = '/';
 }
+// Say so up front if LM Studio isn't answering (rechecks every 10 s, hides itself when it's back)
+async function lmCheck() {
+  try { const st = await (await fetch('/api/status')).json(); $('lmwarn').hidden = !!st.ok; } catch (e) {}
+}
+lmCheck(); setInterval(lmCheck, 10000);
 fetch('/api/options').then(r => r.json()).then(d => {
   data = d;
   const wanted = new URLSearchParams(location.search).get('u');

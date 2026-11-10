@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="/static/theme.css">
 <script src="/static/theme.js"></script>
 <style>
-  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --text:#f0e9f3; --muted:#ada2b6; --dim:#7b7085;
+  :root { --bg:#121015; --card:#1c1721; --field:#261f2c; --text:#f0e9f3; --muted:#ada2b6; --dim:#908699;
           --accent:#b48cf0; --line:#352b3c; --warn:#e7b860; --bad:#ec7b8f; --good:#93c9a1; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--text); font:15px/1.55 'Inter', system-ui, sans-serif; }
@@ -46,7 +46,16 @@
   .card-head { display:flex; align-items:center; gap:8px; margin:0 4px 10px; font-size:14px; }
   .card-head .info { width:16px; height:16px; border:1.4px solid var(--muted); border-radius:50%; display:inline-flex; align-items:center;
                      justify-content:center; font-size:10px; font-weight:700; color:var(--muted); cursor:help; flex-shrink:0; }
-  .card-head .grow { flex:1; }
+  .card-head button.info { background:none; padding:0; font-family:inherit; line-height:1; }
+  .card-head button.info[aria-expanded=true] { color:var(--text); border-color:var(--text); }
+  .card-head .grow { flex:1; cursor:inherit; }
+  .tipbox { margin:-4px 4px 10px; padding:9px 12px; border-radius:12px; background:var(--field); color:var(--muted); font-size:13.5px; line-height:1.45; }
+  .tipbox[hidden] { display:none; }
+  @media (pointer: coarse) {   /* phones and tablets: bigger targets for fingers */
+    .card-head .info { width:26px; height:26px; font-size:12px; }
+    .card-head .expand { min-width:36px; min-height:32px; font-size:18px; }
+    .top .toplinks a { display:inline-flex; align-items:center; justify-content:center; min-height:40px; min-width:36px; padding:0 4px; }
+  }
   .card-head .count { color:var(--dim); font-size:13px; font-variant-numeric:tabular-nums; }
   .card-head .count.over { color:var(--warn); }
   .mem { background:var(--card); border-radius:16px; padding:12px 16px; margin-bottom:14px; font-size:13.5px; color:var(--muted); }
@@ -357,6 +366,7 @@ const say = (t, cls = '') => { statusEl.className = 'status ' + cls; statusEl.te
 const dirty = () => forms.some(f => f.dirty());
 
 // ------------------------------------------------------------------ one input card
+makeInput.n = 0;
 function makeInput(def, value, onChange) {
   if (def.type === 'check') {
     const box = el('input', {type:'checkbox'}); box.checked = !!value; box.onchange = onChange;
@@ -365,8 +375,15 @@ function makeInput(def, value, onChange) {
     return {el: el('div', {class:'card'}, label), get: () => box.checked, input: box, label};
   }
   const head = el('div', {class:'card-head'});
-  if (def.info) head.append(el('span', {class:'info', title:def.info}, 'i'));
-  head.append(el('span', {class:'grow'}, def.label));
+  const fid = 'f-' + (++makeInput.n);
+  let tip = null;
+  if (def.info) {   // a button, so the tip opens on tap (phones) and by keyboard, not only on mouse hover
+    const ib = el('button', {type:'button', class:'info', 'aria-label':'About ' + def.label, 'aria-expanded':'false', title:def.info}, 'i');
+    tip = el('div', {class:'tipbox', hidden:''}, def.info);
+    ib.onclick = e => { e.stopPropagation(); tip.hidden = !tip.hidden; ib.setAttribute('aria-expanded', String(!tip.hidden)); };
+    head.append(ib);
+  }
+  head.append(el('label', {class:'grow', for:fid}, def.label));
   let input;
   if (def.type === 'card') {
     input = el('textarea', {rows: def.rows || 6, spellcheck:'true'});
@@ -380,7 +397,7 @@ function makeInput(def, value, onChange) {
       count.title = over ? 'Over the suggested length. That\'s allowed: it just leaves less room for the conversation (see the memory bar at the top).' : '';
     };
     input.addEventListener('input', upd); upd();
-    const exp = el('button', {class:'expand', title:'Expand', type:'button'}, '⤢');
+    const exp = el('button', {class:'expand', title:'Make the box taller', 'aria-label':'Make the ' + def.label + ' box taller', type:'button'}, '⤢');
     exp.onclick = () => { input.rows = input.rows > (def.rows || 6) ? (def.rows || 6) : (def.rows || 6) * 2 + 6; };
     head.append(count, exp);
     if (def.optional) {
@@ -400,9 +417,10 @@ function makeInput(def, value, onChange) {
   } else {
     input = el('input', {type:'text', placeholder: def.placeholder || ''}); input.value = value || '';
   }
+  input.id = fid;
   input.addEventListener('input', onChange);
   input.addEventListener('change', onChange);
-  const card = el('div', {class:'card' + (input.startCollapsed ? ' collapsed' : '') + (def.optional ? ' optional' : '')}, head, input);
+  const card = el('div', {class:'card' + (input.startCollapsed ? ' collapsed' : '') + (def.optional ? ' optional' : '')}, head, ...(tip ? [tip] : []), input);
   const set = v => { input.value = v; input.dispatchEvent(new Event('input')); if (v && input.openCard) input.openCard(); };
   return {el: card, get: () => input.value, set, input};
 }
@@ -969,11 +987,14 @@ async function itemPage({kind, getItems, newLabel, empty, newExtra, after, onFor
     const f = docForm({kind, id: isNew ? null : selected, defs: FORMS[kind], fields: d.fields, mtime: d.mtime, extra});
     if (isNew) f.changed = false;
     if (onForm) onForm(f, isNew ? null : selected);
-    if (['character', 'npc', 'user'].includes(kind)) formBox.append(portraitCard(kind, isNew ? null : selected));
-    if (kind === 'character') formBox.append(backgroundCard('character', isNew ? null : selected));
+    // A new one starts with its name; the picture cards ("save first") and memory bar go below the form.
+    const media = el('div');
+    if (['character', 'npc', 'user'].includes(kind)) media.append(portraitCard(kind, isNew ? null : selected));
+    if (kind === 'character') media.append(backgroundCard('character', isNew ? null : selected));
+    if (!isNew) formBox.append(media);
     if (['character', 'npc'].includes(kind)) {
       const meter = memoryMeter(kind, f);
-      formBox.append(meter.el);
+      (isNew ? media : formBox).append(meter.el);
       const prev = f.onChange; f.onChange = () => { if (prev) prev(); meter.update(); };
     }
     const orig = f.save;
@@ -999,6 +1020,7 @@ async function itemPage({kind, getItems, newLabel, empty, newExtra, after, onFor
     if (kind === 'character') { formBox.append(sortBar(f)); ageLock(f); }
     if (kind === 'user' || kind === 'npc') ageNote(f, kind);
     formBox.append(f.el);
+    if (isNew) formBox.append(media);
     if (after) await after(isNew ? null : selected, formBox);
     if (!isNew && ['character', 'user'].includes(kind)) {
       const what = kind === 'user' ? 'player' : 'character';
