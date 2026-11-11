@@ -40,6 +40,8 @@ from flask import (Flask, Response, abort, has_request_context, jsonify, redirec
                    send_file, session)
 from werkzeug.security import check_password_hash, generate_password_hash
 
+import launcher  # shortcuts, app window, starting LM Studio (shared with tray.pyw)
+
 # ================================================================ config.toml
 # Port, LM Studio address and where your worlds live are in config.toml (created on first
 # start, next to this file). Restart the app after changing it.
@@ -92,6 +94,8 @@ RECENT_KEEP = 20            # messages always kept word-for-word
 # These are only the starting values.
 DEFAULT_SETTINGS = {
     "model": "",                # "" = whichever model LM Studio has loaded
+    "open_as": "window",        # launcher: open VersiDen in its own window, or a browser "tab"
+    "start_lmstudio": False,    # launcher: start LM Studio's server (and the model above) with VersiDen
     "prompt_format": "auto",    # auto / qwen / chat  (see Settings page)
     "flair": "roleplay",        # style preset, see FLAIRS
     "reasoning": "off",         # off / light / deep: let the model think before replying (Qwen-style format only)
@@ -2593,6 +2597,52 @@ def api_settings():
                     "flairs": [{"id": k, "label": v[0], "about": v[2]} for k, v in FLAIRS.items()]})
 
 
+# ---------------------------------------------------------------- launcher (shortcuts, app window, LM Studio)
+def launcher_state():
+    st = settings()
+    browser = launcher.browser_for_app_window()
+    return {"windows": launcher.IS_WINDOWS, "local": is_local_request(),
+            "open_as": st.get("open_as", "window"), "start_lmstudio": bool(st.get("start_lmstudio")),
+            "model": st.get("model", ""), "lms_found": bool(launcher.lms_exe()),
+            "browser": ("Edge" if browser and "edge" in browser.name.lower() else "Chrome") if browser else "",
+            "shortcuts": launcher.shortcuts_exist() if launcher.IS_WINDOWS else False}
+
+
+@app.route("/api/launcher", methods=["GET", "POST"])
+def api_launcher():
+    if request.method == "POST":
+        if not is_local_request():
+            return jsonify({"error": "Change these on the PC that runs VersiDen."}), 403
+        j, st = request.json or {}, settings()
+        if j.get("open_as") in ("window", "tab"):
+            st["open_as"] = j["open_as"]
+        if "start_lmstudio" in j:
+            st["start_lmstudio"] = bool(j["start_lmstudio"])
+        ROOT.mkdir(parents=True, exist_ok=True)
+        save_json(SETTINGS_FILE, st)
+    return jsonify(launcher_state())
+
+
+@app.route("/api/launcher/shortcuts", methods=["POST"])
+def api_launcher_shortcuts():
+    if not is_local_request():
+        return jsonify({"error": "Add shortcuts on the PC that runs VersiDen."}), 403
+    try:
+        launcher.make_shortcuts()
+    except OSError as e:
+        return jsonify({"error": f"Couldn't add the shortcuts: {e}"}), 500
+    return jsonify({"ok": True, **launcher_state()})
+
+
+@app.route("/api/launcher/lmstudio", methods=["POST"])
+def api_launcher_lmstudio():
+    """Try the LM Studio start-up now, so you know it works before relying on it."""
+    if not is_local_request():
+        return jsonify({"error": "Run this on the PC that runs VersiDen."}), 403
+    msg = launcher.start_lmstudio(NATIVE_URL, settings().get("model", ""), BASE / "logs" / "lmstudio.log")
+    return jsonify({"message": msg, "running": launcher.lmstudio_responds(NATIVE_URL), **launcher_state()})
+
+
 @app.route("/api/models")
 def api_models():
     try:
@@ -3264,5 +3314,5 @@ if __name__ == "__main__":
     else:
         print("Phone access is off (turn it on in Model Settings, then restart the app from the tray icon).")
     if "--open" in sys.argv:
-        threading.Timer(1.5, lambda: webbrowser.open(pc_url)).start()
+        threading.Timer(1.5, lambda: launcher.open_ui(pc_url, settings().get("open_as", "window"))).start()
     app.run(host=RUNNING["host"], port=port, debug=False, threaded=True)

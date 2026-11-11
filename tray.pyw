@@ -1,13 +1,15 @@
 """
 Runs the app in the background, with an icon in the Windows tray (next to the clock).
 
-Start it by double-clicking start.bat. Right-click the tray icon for:
-Open · Phone access · Restart · Show log · Start with Windows · Quit
+Start it by double-clicking start.bat (or the VersiDen shortcut, once added). Right-click the
+tray icon for: Open · Phone access · Restart · Show log · Add to Desktop and Start menu ·
+Start with Windows · Quit
 
 The app itself (app.py) runs as a hidden background process; everything it prints goes
 to logs/app.log (use "Show log" in the tray menu).
 """
 
+import json
 import os
 import subprocess
 import sys
@@ -16,11 +18,12 @@ import time
 import tomllib
 import traceback
 import urllib.request
-import webbrowser
 from datetime import datetime
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
+sys.path.insert(0, str(BASE))
+import launcher  # noqa: E402  (shortcuts, app window, LM Studio)
 LOG_DIR = BASE / "logs"
 LOG_FILE = LOG_DIR / "app.log"
 TRAY_LOG = LOG_DIR / "tray.log"
@@ -38,6 +41,26 @@ def config():
     except (OSError, tomllib.TOMLDecodeError):
         pass  # app.py creates config.toml on its first start
     return cfg
+
+
+def launch_prefs():
+    """Launcher choices from the Settings page (stored with the model settings)."""
+    c = config()
+    prefs = dict(launcher.LAUNCH_DEFAULTS)
+    try:
+        saved = json.loads((BASE / c.get("worlds_dir", "worlds") / ".settings.json").read_text(encoding="utf-8"))
+        prefs.update({k: saved[k] for k in ("open_as", "start_lmstudio", "model") if k in saved})
+    except (OSError, ValueError):
+        pass
+    return prefs
+
+
+def lmstudio_native_url():
+    return str(config().get("lmstudio_url", "http://localhost:1234/v1")).rsplit("/v1", 1)[0]
+
+
+def open_app(path=""):
+    launcher.open_ui(app_url(path), launch_prefs().get("open_as", "window"))
 
 
 def app_url(path=""):
@@ -207,7 +230,7 @@ def run_tray(app, open_browser):
         message_box("The tray icon needs two small add-ons.\n\nOpen a terminal in the app's folder and run:\n\n"
                     "    pip install pystray pillow\n\nThen double-click start.bat again.\n\n"
                     "(The app itself is running anyway; this window is just to tell you.)")
-        open_browser and webbrowser.open(app_url())
+        open_browser and open_app()
         while app.wanted:          # keep the app running without the icon
             time.sleep(5)
         return
@@ -221,10 +244,18 @@ def run_tray(app, open_browser):
         return f"{name}: {app.status}"
 
     def do_open(icon=None, item=None):
-        webbrowser.open(app_url())
+        open_app()
 
     def do_phone(icon=None, item=None):
-        webbrowser.open(app_url("/settings"))
+        open_app("/settings")
+
+    def do_shortcuts(icon, item):
+        try:
+            launcher.make_shortcuts()
+            message_box("VersiDen is now on your Desktop and in the Start menu.\n\n"
+                        "Tip: right-click it in the Start menu and choose \"Pin to taskbar\" or \"Pin to Start\".")
+        except OSError as e:
+            message_box(f"Couldn't add the shortcuts: {e}")
 
     def do_restart(icon, item):
         threading.Thread(target=lambda: (app.restart(), app.wait_ready()), daemon=True).start()
@@ -251,6 +282,7 @@ def run_tray(app, open_browser):
         pystray.MenuItem("Restart", do_restart),
         pystray.MenuItem("Show log", do_log),
         pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Add to Desktop and Start menu", do_shortcuts),
         pystray.MenuItem("Start with Windows", do_startup, checked=lambda item: startup_enabled()),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Quit", do_quit),
@@ -263,7 +295,7 @@ def run_tray(app, open_browser):
 
     def when_ready():
         if app.wait_ready() and open_browser:
-            webbrowser.open(app_url())
+            open_app()
         elif app.status != "running":
             app.status = "didn't start (see Show log)"
             refresh()
@@ -276,8 +308,11 @@ def main():
     migrate_startup()
     if app_responds():                            # already running: just open it
         if not background:
-            webbrowser.open(app_url())
+            open_app()
         return
+    prefs = launch_prefs()
+    if prefs.get("start_lmstudio"):               # start LM Studio's server alongside (in the background)
+        launcher.start_lmstudio_in_background(lmstudio_native_url(), prefs.get("model", ""), LOG_DIR / "lmstudio.log")
     app = AppProcess()
     app.start()
     threading.Thread(target=app.watch, daemon=True).start()

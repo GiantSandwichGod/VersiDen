@@ -26,13 +26,24 @@ The full step-by-step guide is built into the app: open it and click **? Guide**
 2. **Let LM Studio run in the background.** In LM Studio, open its settings (`Ctrl` + `,`),
    click **Developer**, and turn on **Enable Local LLM Service**. The model server then runs
    whenever you're logged in, even with the LM Studio window closed.
-3. **Start the app:** double-click **`start.bat`**. After a few seconds your browser opens the app,
-   and a small blue speech-bubble icon appears near the clock. (If you don't see it, click the
-   **^** arrow next to the clock; you can drag the icon out onto the taskbar.)
-4. **Make it start with Windows:** right-click the icon → tick **Start with Windows**.
+3. **Start the app:** double-click **`start.bat`**. After a few seconds VersiDen opens in its own
+   window, and the VersiDen icon appears near the clock. (If you don't see it, click the **^**
+   arrow next to the clock; you can drag the icon out onto the taskbar.)
+4. **Add shortcuts:** right-click the icon → **Add to Desktop and Start menu**. From then on, start
+   VersiDen from its shortcut (right-click it in the Start menu to **Pin to taskbar**) instead of
+   opening this folder. Or tick **Start with Windows** to have it running whenever you log in.
 
-From now on the app runs whenever the PC is on. Open it at **http://versiden.localhost:5000**
-(bookmark it), or left-click the tray icon.
+Open it any time by left-clicking the tray icon, or at **http://versiden.localhost:5000**.
+
+**Starting VersiDen** in Model Settings (on the PC) has three more options:
+- **Shortcuts**: the same Desktop and Start menu shortcuts as the tray icon.
+- **Open VersiDen in**: its own window (Edge or Chrome without the address bar or tabs, with its
+  own taskbar button) or a normal browser tab.
+- **LM Studio**: tick **Start LM Studio's server when VersiDen starts** and VersiDen starts it in
+  the background and loads the model chosen in Model Settings. Then step 2 isn't needed: you can
+  turn LM Studio's own service off, so it only runs while you use VersiDen. **Try it now** checks
+  it works. It uses LM Studio's command-line helper (`lms`), which LM Studio sets up the first time
+  you open it; if VersiDen can't find it, the card says how to fix that.
 
 ## The tray icon
 
@@ -40,10 +51,11 @@ Right-click the icon near the clock:
 
 | Menu item | What it does |
 |---|---|
-| **Open** | Opens the app in your browser (also: left-click the icon) |
+| **Open** | Opens the app (also: left-click the icon) |
 | **Phone access…** | Opens Model Settings, where the phone address and passphrase are |
 | **Restart** | Restarts the app, e.g. after changing phone access or `config.toml` |
 | **Show log** | Opens the app's log in Notepad, which is useful when something goes wrong |
+| **Add to Desktop and Start menu** | Adds VersiDen shortcuts with its icon (again after moving the folder) |
 | **Start with Windows** | Tick to start the app automatically when you log in |
 | **Quit** | Stops the app |
 

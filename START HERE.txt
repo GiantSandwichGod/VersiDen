@@ -10,6 +10,8 @@ The short version:
      In LM Studio: Settings (Ctrl + ,) > Developer > turn on "Enable Local LLM Service".
   3. Open this folder, click the address bar, type cmd, press Enter, then run:
         pip install -r requirements.txt
-  4. Double-click start.bat. Your browser opens VersiDen.
+  4. Double-click start.bat. VersiDen opens.
+     Then right-click the VersiDen icon by the clock > Add to Desktop and Start menu,
+     and start it from that shortcut from now on.
 
 Once it's running, the same guide is inside the app: click "? Guide".

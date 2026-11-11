@@ -28,6 +28,10 @@
   .section-title { text-align:center; color:var(--muted); font-size:14px; margin:26px 0 12px; }
   .card { background:var(--card); border-radius:22px; padding:14px 16px 16px; margin-bottom:14px; }
   .card-head { display:flex; align-items:center; gap:8px; margin:0 4px 10px; font-size:14px; }
+  .choice { display:flex; gap:10px; align-items:center; margin:2px 6px 8px; cursor:pointer; }
+  .choice input { width:18px; height:18px; accent-color:var(--accent); margin:0; }
+  .choice input:disabled + * , .choice:has(input:disabled) { opacity:.6; cursor:not-allowed; }
+  #lmsSetup code { background:var(--card); padding:1px 6px; border-radius:6px; font-size:12.5px; word-break:break-all; }
   .card-head button.info { background:none; padding:0; font-family:inherit; line-height:1; cursor:pointer; }
   .card-head button.info[aria-expanded=true] { color:var(--text); border-color:var(--text); }
   .tipbox { margin:-4px 4px 10px; padding:9px 12px; border-radius:12px; background:var(--field); color:var(--muted); font-size:13.5px; line-height:1.45; }
@@ -163,6 +167,35 @@
     <div id="phoneBox" class="test" style="display:none;margin-top:14px"></div>
   </div>
 
+  <div id="launchSection" hidden>
+  <h1 style="margin-top:44px">Starting VersiDen</h1>
+  <p class="lead">Shortcuts, how it opens, and starting LM Studio for you. These save straight away.</p>
+  <div class="card">
+    <div class="card-head"><span class="info" title="Adds VersiDen, with its own icon, to your Desktop and Start menu. It does the same as double-clicking start.bat: starts VersiDen with its icon by the clock, then opens it. Adding again just refreshes them, e.g. after moving the VersiDen folder.">i</span><span class="grow">Shortcuts</span></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn primary" id="addShortcuts" type="button">Add to Desktop and Start menu</button>
+      <span class="status" id="shortcutStatus"></span>
+    </div>
+    <p class="hint">Then right-click VersiDen in the Start menu to <b>Pin to taskbar</b>. If you move the VersiDen folder, add them again.</p>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="info" title="Its own window has no address bar or tabs and gets its own button on the taskbar, like an app. It uses Edge (part of Windows) or Chrome; your bookmarks and passwords aren't affected.">i</span><span class="grow">Open VersiDen in</span></div>
+    <label class="choice"><input type="radio" name="open_as" value="window" data-instant> Its own window (recommended)</label>
+    <label class="choice"><input type="radio" name="open_as" value="tab" data-instant> A tab in my usual browser</label>
+    <p class="hint" id="openAsHint"></p>
+  </div>
+  <div class="card">
+    <div class="card-head"><span class="info" title="When VersiDen starts, it also starts LM Studio's server in the background (no LM Studio window) and loads the model chosen at the top of this page. If LM Studio is already running, nothing changes.">i</span><span class="grow">LM Studio</span></div>
+    <label class="choice"><input type="checkbox" id="start_lmstudio" data-instant> Start LM Studio's server when VersiDen starts</label>
+    <p class="hint" id="lmsHint"></p>
+    <div id="lmsSetup" class="test" hidden></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px">
+      <button class="btn" id="tryLms" type="button">Try it now</button>
+      <span class="status" id="lmsStatus"></span>
+    </div>
+  </div>
+  </div>
+
   <div class="test" id="testOut"></div>
   <div class="actions">
     <button class="btn goback" type="button">← Back</button>
@@ -294,8 +327,9 @@ $('save').onclick = save;
 
 // ---- leaving: Back (top and bottom) returns to where you came from, and asks first if something isn't saved
 let unsaved = false;
-document.querySelector('main').addEventListener('input', e => { if (e.target.matches('input, select, textarea')) unsaved = true; });
-document.querySelector('main').addEventListener('change', e => { if (e.target.matches('input, select, textarea')) unsaved = true; });
+const TRACKED = 'input:not([data-instant]), select, textarea';   // [data-instant] controls save themselves
+document.querySelector('main').addEventListener('input', e => { if (e.target.matches(TRACKED)) unsaved = true; });
+document.querySelector('main').addEventListener('change', e => { if (e.target.matches(TRACKED)) unsaved = true; });
 $('reset').addEventListener('click', () => { unsaved = true; });
 function goBack(e) {
   if (e) e.preventDefault();
@@ -348,6 +382,50 @@ $('test').onclick = async () => {
   const j = await (await fetch('/api/test_model', {method:'POST'})).json();
   if (j.error) { out.className = 'test bad'; out.textContent = j.error; }
   else out.textContent = `${j.model} · ${j.format} · ${j.seconds}s\n\n“${j.reply}”`;
+};
+
+// ---- Starting VersiDen (Windows, on the PC itself)
+function showLauncher(L) {
+  if (!L.windows || !L.local) { $('launchSection').hidden = true; return; }
+  $('launchSection').hidden = false;
+  document.querySelectorAll('input[name=open_as]').forEach(r => { r.checked = r.value === L.open_as; });
+  $('openAsHint').textContent = L.open_as === 'tab' ? 'Opens as a tab in your usual browser. Takes effect the next time VersiDen opens.'
+    : L.browser ? `Opens in ${L.browser} without the address bar or tabs. Takes effect the next time VersiDen opens.`
+    : 'Edge or Chrome is needed for its own window; without either it opens in a tab.';
+  $('shortcutStatus').textContent = L.shortcuts ? 'Added ✓' : '';
+  $('addShortcuts').textContent = L.shortcuts ? 'Add again' : 'Add to Desktop and Start menu';
+  $('start_lmstudio').checked = L.start_lmstudio;
+  $('start_lmstudio').disabled = !L.lms_found && !L.start_lmstudio;
+  $('tryLms').hidden = !L.lms_found;
+  $('lmsSetup').hidden = L.lms_found;
+  if (!L.lms_found) {
+    $('lmsHint').textContent = "VersiDen couldn't find LM Studio's command-line helper (lms), which it needs to start LM Studio.";
+    $('lmsSetup').innerHTML = '<b>One-time setup:</b> open LM Studio once and close it again, then come back and reload this page. ' +
+      'If it still isn\'t found, open Command Prompt and run <code>%USERPROFILE%\\.lmstudio\\bin\\lms.exe bootstrap</code>, then reload.';
+  } else {
+    $('lmsHint').innerHTML = (L.model
+      ? `It also loads <b>${L.model.replace(/[<>&]/g, '')}</b> if it isn't loaded yet.`
+      : 'Pick a model at the top of this page so it can be loaded in advance; otherwise LM Studio loads one when you first chat.') +
+      ' With this on, you can switch off LM Studio\'s own "run on login" setting, so it only runs when you use VersiDen.';
+  }
+}
+async function launcherPost(url, body) {
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body || {})});
+  return r.json();
+}
+fetch('/api/launcher').then(r => r.json()).then(showLauncher).catch(() => {});
+document.querySelectorAll('input[name=open_as]').forEach(r => r.addEventListener('change', async () => showLauncher(await launcherPost('/api/launcher', {open_as: r.value}))));
+$('start_lmstudio').addEventListener('change', async e => showLauncher(await launcherPost('/api/launcher', {start_lmstudio: e.target.checked})));
+$('addShortcuts').onclick = async () => {
+  $('addShortcuts').disabled = true; $('shortcutStatus').textContent = 'Adding…';
+  const j = await launcherPost('/api/launcher/shortcuts'); $('addShortcuts').disabled = false;
+  if (j.error) { $('shortcutStatus').textContent = j.error; return; }
+  showLauncher(j); $('shortcutStatus').textContent = 'Added to your Desktop and Start menu ✓';
+};
+$('tryLms').onclick = async () => {
+  $('tryLms').disabled = true; $('lmsStatus').textContent = 'Starting LM Studio… (loading a model can take a minute)';
+  const j = await launcherPost('/api/launcher/lmstudio'); $('tryLms').disabled = false;
+  $('lmsStatus').textContent = j.error || j.message;
 };
 
 // Field tips open on tap or click (not only mouse hover), and each control is named by its heading.
